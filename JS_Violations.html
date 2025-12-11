@@ -343,89 +343,105 @@
     }
 
   // =================================================================
-    // 3. دالة الطباعة (النسخة الشاملة: تمسح كل الخيارات لاستخراج الدرجة)
-    // =================================================================
-    function printCurrentContext(formId, actionText = '') {
-        // 1. التحقق من اختيار الطالب
-        const studentSelect = document.getElementById('nv-student');
-        if (!studentSelect || !studentSelect.value) {
-            showEnhancedToast('danger', 'يرجى اختيار الطالب أولاً');
-            return;
-        }
-        // جلب اسم الطالب (النص)
-        const studentName = studentSelect.options[studentSelect.selectedIndex].text;
+// 3. دالة الطباعة (النسخة الشاملة والنهائية)
+// =================================================================
+function printCurrentContext(formId, actionText = '') {
+    // 1. التحقق من اختيار الطالب
+    const studentSelect = document.getElementById('nv-student');
+    if (!studentSelect || !studentSelect.value) {
+        showEnhancedToast('danger', 'يرجى اختيار الطالب أولاً');
+        return;
+    }
+    
+    // 2. جلب بيانات الطالب
+    const studentName = studentSelect.options[studentSelect.selectedIndex].text;
+    const grade = document.getElementById('nv-grade').value;
+    const cls = document.getElementById('nv-class').value;
 
-        // 2. جلب بيانات المخالفة من القوائم المنسدلة (المصدر الموثوق)
-        const vSelect = document.getElementById('nv-text');
-        const vName = vSelect.options[vSelect.selectedIndex].text; // اسم المخالفة
+    // 3. جلب بيانات المخالفة
+    const vSelect = document.getElementById('nv-text');
+    const vName = vSelect.options[vSelect.selectedIndex].text;
+    
+    const vDegreeSelect = document.getElementById('nv-degree');
+    let vDegree = vDegreeSelect.value;
+    if (vDegree.includes(' ')) vDegree = vDegree.split(' ')[1];
+
+    // 4. التاريخ واليوم
+    const today = new Date();
+    const vDate = today.toLocaleDateString('ar-SA-u-ca-islamic');
+    const vDay = today.toLocaleDateString('ar-SA', { weekday: 'long' });
+
+    // 5. جمع الإجراءات المختارة
+    const procedures = [];
+    document.querySelectorAll('#procedures-list input:checked').forEach(cb => {
+        procedures.push(cb.value);
+    });
+
+    // 6. حساب الدرجات المحسومة (للنموذج tawid_darajat)
+    let foundPoints = '0';
+    if (formId === 'tawid_darajat') {
+        let allCheckedTexts = procedures.join(' ') + ' ' + actionText;
         
-        const vDegreeSelect = document.getElementById('nv-degree');
-        const vDegree = vDegreeSelect.value; // الدرجة
+        const numberMatch = allCheckedTexts.match(/(\d+)/);
+        if (numberMatch) {
+            foundPoints = numberMatch[0];
+        } else if (allCheckedTexts.includes('درجة واحدة') || allCheckedTexts.includes('درجة من')) {
+            foundPoints = '1';
+        } else if (allCheckedTexts.includes('درجتين') || allCheckedTexts.includes('درجتان')) {
+            foundPoints = '2';
+        } else if (allCheckedTexts.includes('ثلاث درجات')) {
+            foundPoints = '3';
+        } else if (allCheckedTexts.includes('كامل الدرجة')) {
+            foundPoints = 'كامل الدرجة';
+        }
+    }
 
-        const vDate = new Date().toLocaleDateString('ar-SA-u-ca-islamic'); // تاريخ اليوم
+    // 7. تجهيز حزمة البيانات الشاملة
+    let printData = {
+        // بيانات الطالب
+        studentName: studentName,
+        grade: grade,
+        class: cls,
+        
+        // بيانات المخالفة
+        violationDate: vDate,
+        violationDay: vDay,
+        violationDegree: vDegree,
+        violationText: vName,
+        
+        // الإجراءات
+        procedures: procedures,
+        
+        // بيانات المخالفة للنموذج الجديد (فرص التعويض)
+        violationInfo: {
+            name: vName,
+            degree: vDegree,
+            date: vDate,
+            points: foundPoints
+        }
+    };
 
-        // 3. تجهيز حزمة البيانات (بكل الصيغ لضمان التوافق)
-        let printData = {
-            studentName: studentName,
-            grade: document.getElementById('nv-grade').value,
-            class: document.getElementById('nv-class').value,
-            violationDate: vDate,
-            
-            // --- مفاتيح التوافق مع النماذج القديمة ---
-            violationText: vName,       
-            violationDegree: vDegree,   
-            
-            // --- مفاتيح النموذج الجديد (فرص تعويض) ---
-            violationInfo: {
-                name: vName,
-                degree: vDegree,
-                date: vDate,
-                points: '0' // سنقوم بحسابها حالاً في الخطوة 5
-            }
-        };
-
-        // 4. جلب اسم الوكيل
-        if (APP_DATA.settings && APP_DATA.settings.deputies && APP_DATA.settings.deputies.length > 0) {
+    // 8. إضافة بيانات الإعدادات (المدير، اللجنة، الوكيل)
+    if (APP_DATA.settings) {
+        // اسم المدير
+        if (APP_DATA.settings.manager) {
+            printData.managerName = APP_DATA.settings.manager;
+        }
+        
+        // أعضاء اللجنة
+        if (APP_DATA.settings.committee) {
+            printData.committeeMembers = APP_DATA.settings.committee;
+        }
+        
+        // اسم الوكيل
+        if (APP_DATA.settings.deputies && APP_DATA.settings.deputies.length > 0) {
             printData.deputyName = APP_DATA.settings.deputies[0].name;
         }
-
-        // 5. [الذكاء البرمجي] حساب الدرجات المحسومة بمسح كل الخيارات المختارة
-        if (formId === 'tawid_darajat') {
-            let foundPoints = '0';
-            let allCheckedTexts = "";
-
-            // تجميع نصوص كل المربعات التي تم اختيارها (Checked)
-            // هذا يحل مشكلة أن زر الطباعة في سطر ورقم الخصم في سطر آخر
-            const checkedBoxes = document.querySelectorAll('#procedures-list input:checked');
-            checkedBoxes.forEach(cb => {
-                allCheckedTexts += " " + cb.value;
-            });
-            
-            // إضافة النص الحالي للاحتياط
-            allCheckedTexts += " " + actionText;
-
-            // البحث الذكي عن الرقم داخل النص المجمع
-            const numberMatch = allCheckedTexts.match(/(\d+)/); // البحث عن أي رقم (3, 10, 15)
-            
-            if (numberMatch) {
-                foundPoints = numberMatch[0];
-            } else if (allCheckedTexts.includes('درجة واحدة') || allCheckedTexts.includes('درجة من')) {
-                foundPoints = '1';
-            } else if (allCheckedTexts.includes('درجتين') || allCheckedTexts.includes('درجتان')) {
-                foundPoints = '2';
-            } else if (allCheckedTexts.includes('ثلاث درجات')) {
-                foundPoints = '3';
-            } else if (allCheckedTexts.includes('كامل الدرجة')) {
-                foundPoints = 'كامل الدرجة';
-            }
-            
-            // تعيين الدرجة المستخرجة
-            printData.violationInfo.points = foundPoints;
-        }
-
-        // 6. التنفيذ
-        printFormDirectly(formId, encodeURIComponent(JSON.stringify(printData)));
     }
+
+    // 9. تنفيذ الطباعة
+    printFormDirectly(formId, encodeURIComponent(JSON.stringify(printData)));
+}
     
     function saveViolation() {
         const studentId = document.getElementById('nv-student').value;
