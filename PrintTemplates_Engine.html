@@ -1,0 +1,466 @@
+<!-- ============================================================ -->
+<!-- PrintTemplates_Engine.html -->
+<!-- محرك الطباعة - دوال التعبئة وضبط الخط -->
+<!-- ============================================================ -->
+
+<script>
+    // =================================================================
+    // 1. دالة تحويل الأرقام للهندية
+    // =================================================================
+    function toIndic(n) {
+        if (n == null || n === '') return '';
+        return n.toString().replace(/\d/g, d => "٠١٢٣٤٥٦٧٨٩"[d]);
+    }
+
+    // دالة لتقليص الاسم (الأول + الثاني + الأخير)
+    function shortenName(fullName) {
+        if (!fullName) return '';
+        const parts = fullName.trim().split(/\s+/);
+        if (parts.length <= 3) return fullName; // إذا كان الاسم قصيراً، كما هو
+        // أخذ الأول + الثاني + الأخير
+        return parts[0] + ' ' + parts[1] + ' ' + parts[parts.length - 1];
+    }
+
+    // =================================================================
+    // 2. دالة ضبط حجم الخط تلقائياً (محسّنة)
+    // =================================================================
+    function adjustFontSize(element) {
+        if (!element) return;
+        
+        const text = element.innerText || element.textContent;
+        if (!text || text.trim() === '') return;
+        
+        // الحصول على العرض المتاح
+        let maxWidth = element.offsetWidth;
+        
+        // إذا لم يكن للعنصر عرض، نستخدم عرض الأب
+        if (maxWidth <= 0) {
+            maxWidth = element.parentElement ? element.parentElement.offsetWidth * 0.8 : 200;
+        }
+        
+        // الحصول على نمط min-width إن وجد
+        const minWidthStyle = element.style.minWidth;
+        if (minWidthStyle && minWidthStyle.includes('px')) {
+            const minW = parseInt(minWidthStyle);
+            if (minW > maxWidth) maxWidth = minW;
+        }
+        
+        // البدء بحجم خط أصغر (14 بدلاً من 16)
+        let fontSize = 14;
+        const minFontSize = 9;
+        
+        // إنشاء عنصر مؤقت للقياس
+        const temp = document.createElement('span');
+        temp.style.cssText = 'visibility:hidden;position:absolute;white-space:nowrap;font-family:"Traditional Arabic","Amiri",serif;font-weight:bold;';
+        temp.innerText = text;
+        document.body.appendChild(temp);
+        
+        // تصغير الخط حتى يتناسب مع العرض
+        temp.style.fontSize = fontSize + 'pt';
+        while (temp.offsetWidth > maxWidth && fontSize > minFontSize) {
+            fontSize -= 0.5;
+            temp.style.fontSize = fontSize + 'pt';
+        }
+        
+        // تطبيق الحجم الجديد
+        element.style.fontSize = fontSize + 'pt';
+        element.style.lineHeight = '1.2';
+        
+        // إزالة العنصر المؤقت
+        document.body.removeChild(temp);
+    }
+
+    // =================================================================
+    // 3. دالة تعبئة حقل مع ضبط الخط
+    // =================================================================
+    function fillField(elementId, value, convertToIndic = false) {
+        const element = document.getElementById(elementId);
+        if (!element) return;
+        
+        let finalValue = value || '';
+        if (convertToIndic && finalValue) {
+            finalValue = toIndic(finalValue);
+        }
+        
+        element.innerText = finalValue;
+    }
+
+    // =================================================================
+    // 4. دالة إظهار النموذج المطلوب وإخفاء الباقي
+    // =================================================================
+    function showTemplate(formId) {
+        // إخفاء جميع النماذج
+        document.querySelectorAll('.print-template').forEach(template => {
+            template.style.display = 'none';
+        });
+        
+        // إظهار النموذج المطلوب
+        const targetForm = document.getElementById('form-' + formId);
+        if (targetForm) {
+            targetForm.style.display = 'block';
+        } else {
+            console.error('النموذج غير موجود: ' + formId);
+        }
+    }
+
+    // =================================================================
+    // 5. دالة ضبط جميع الحقول المعبأة
+    // =================================================================
+    function adjustAllFields() {
+        document.querySelectorAll('.with-dots').forEach(function(el) {
+            if (el.innerText && el.innerText.trim() !== '') {
+                adjustFontSize(el);
+            }
+        });
+    }
+
+    // =================================================================
+    // 6. دالة التعبئة الرئيسية (تُستدعى من النظام)
+    // =================================================================
+    function fillForm(formId, data) {
+        // إظهار النموذج المطلوب
+        showTemplate(formId);
+        
+        // تعبئة البيانات حسب نوع النموذج
+        switch(formId) {
+            
+            // ===== نموذج 1: إشعار ولي أمر =====
+            case 'ishar_wali_amr':
+                fillField('studentName', data.studentName);
+                fillField('studentName_2', data.studentName);
+                fillField('grade', data.grade);
+                fillField('violationDay', data.violationDay);
+                fillField('violationDate', data.violationDate, true);
+                fillField('violationDegree', data.violationDegree, true);
+                fillField('violationText', '● ' + (data.violationText || ''));
+                fillField('managerName', data.managerName);
+                if (data.procedures && data.procedures.length > 0) {
+                    for (let i = 0; i < Math.min(data.procedures.length, 3); i++) {
+                        fillField('proc_' + (i + 1), data.procedures[i]);
+                    }
+                }
+                break;
+            
+            // ===== نموذج 2: تعهد سلوكي =====
+            case 'tahood_slooki':
+                fillField('tahood_studentName', data.studentName);
+                fillField('tahood_grade', data.grade);
+                fillField('tahood_day', data.violationDay);
+                fillField('tahood_date', data.violationDate, true);
+                fillField('tahood_degree', data.violationDegree, true);
+                fillField('tahood_text', '● ' + (data.violationText || ''));
+                break;
+            
+            // ===== نموذج 3: دعوة ولي أمر =====
+            case 'dawat_wali_amr':
+                fillField('dawat_studentName', data.studentName);
+                fillField('dawat_grade', data.grade);
+                fillField('dawat_managerName', data.managerName);
+                fillField('dawat_visitReason', '● ' + (data.visitReason || 'لمناقشة المستوى السلوكي للطالب.'));
+                break;
+            
+            // ===== نموذج 4: محضر ضبط واقعة =====
+            case 'mahdar_dab_wakea':
+                fillField('mahdar_studentName', data.studentName);
+                fillField('mahdar_grade', data.grade);
+                fillField('mahdar_day', data.violationDay);
+                fillField('mahdar_date', data.violationDate, true);
+                fillField('mahdar_problem', '● ' + (data.violationText || ''));
+                break;
+            
+            // ===== نموذج 5: محضر لجنة (مخالفة) =====
+            case 'mahdar_lajnah':
+                fillField('lajnah_studentName', data.studentName);
+                fillField('lajnah_grade', data.grade);
+                fillField('lajnah_day', data.violationDay);
+                fillField('lajnah_date', data.violationDate, true);
+                fillField('lajnah_degree', data.violationDegree, true);
+                fillField('lajnah_desc', '● ' + (data.violationText || ''));
+                fillCommitteeMembers('lajnah_members_table', data.committeeMembers);
+                break;
+            
+            // ===== نموذج 6: محضر لجنة (غياب) =====
+            case 'mahdar_lajnah_absence':
+                fillField('lajnah_abs_studentName', data.studentName);
+                fillField('lajnah_abs_grade', data.grade);
+                fillField('lajnah_abs_day', data.violationDay);
+                fillField('lajnah_abs_date', data.violationDate, true);
+            // الحقول الجديدة بعد سطر "وصول غيابه إلى:"
+                fillField('lajnahabsUnexcusedSpan', data.unexcusedDays, true);
+                fillField('lajnahabsExcusedSpan',  data.excusedDays,  true);
+                fillCommitteeMembers('lajnah_abs_members_table', data.committeeMembers);
+                break;
+
+            
+            // ===== نموذج 7: إحالة طالب =====
+            case 'ehalat_talib':
+                fillField('ehala_studentName', data.studentName);
+                fillField('ehala_grade', data.grade);
+                fillField('ehala_text', '● ' + (data.violationText || ''));
+                fillField('ehala_degree', data.violationDegree, true);
+                break;
+            
+            // ===== النموذج 8: نموذج إحالة جماعية (هذا هو الكود الصحيح له) =====
+            case 'group_ehala':
+                // 1. تعبئة التاريخ
+                const d = new Date();
+                const dayName = d.toLocaleDateString('ar-SA', {weekday: 'long'});
+                const dateStr = data.violationDate || d.toLocaleDateString('ar-SA-u-ca-islamic');
+                fillField('ge_date', dayName + ' ' + dateStr, true);
+
+                // 2. تعبئة اسم الوكيل
+                if (data.deputyName) {
+                    fillField('ge_deputy', data.deputyName);
+                }
+
+                // 3. بناء الجدول
+                const tbody = document.getElementById('ge_table_body');
+                if (tbody && data.studentsList && data.studentsList.length > 0) {
+                    tbody.innerHTML = ''; // مسح الصفوف القديمة تماماً
+
+                    data.studentsList.forEach((s, i) => {
+                        const tr = document.createElement('tr');
+                        const shortName = shortenName(s.name);
+                        
+                        // تمت إزالة with-dots من الاسم لإزالة الخطوط المنقطة
+                        tr.innerHTML = `
+                            <td class="indic-num">${toIndic(i + 1)}</td>
+                            <td style="text-align: right; padding-right:5px; font-weight:bold;">
+                                ${shortName}
+                            </td>
+                            <td>${s.grade}</td>
+                            <td class="indic-num">${toIndic(s.unexcused)}</td>
+                            <td class="indic-num">${toIndic(s.excused)}</td>
+                            <td></td>
+                        `;
+                        tbody.appendChild(tr);
+                    });
+                }
+                break;
+                
+          // ===== النموذج 9: رصد مخالفات (ملف الطالب) - معبأ آلياً (نسخة نهائية) =====
+            case 'rasd_slooki':
+                // 1. تعبئة بيانات الطالب
+                fillField('rasd_s_studentName', data.studentName);
+                fillField('rasd_s_grade', data.grade);
+                fillField('rasd_s_class', data.class);
+                
+                // 2. تعبئة اسم الوكيل
+                if (data.deputyName) {
+                    fillField('rs_deputy', data.deputyName);
+                }
+
+                // 3. تعبئة جدول المخالفات
+                const tbody_rs = document.getElementById('rs_table_body');
+                if (tbody_rs && data.violationsList && data.violationsList.length > 0) {
+                    tbody_rs.innerHTML = ''; // مسح الصفوف الفارغة
+                    
+                    data.violationsList.forEach((v, i) => {
+                        const tr = document.createElement('tr');
+                        
+                        // معالجة نص الإجراءات (تنظيف الشرطات وتوحيد الأرقام)
+                        let rawProc = v['الإجراءات'] || '';
+                        let procText = rawProc.split('\n')
+                            .filter(p => p.trim() !== '')
+                            .map(p => {
+                                // 1. حذف الشرطات القديمة من بداية السطر لمنع التكرار
+                                let cleanLine = p.trim().replace(/^[-\s]+/, '');
+                                // 2. تحويل أي رقم داخل النص إلى عربي (مثال: 3 درجات -> ٣ درجات)
+                                cleanLine = toIndic(cleanLine);
+                                // 3. إضافة شرطة موحدة في البداية
+                                return '- ' + cleanLine;
+                            })
+                            .join('<br>');
+
+                        tr.innerHTML = `
+                            <td style="font-family: 'Traditional Arabic'; font-weight: normal; font-size: 14pt;">${toIndic(i + 1)}</td>
+                            
+                            <td style="text-align: right; padding-right:5px; font-size:11pt;">${toIndic(v['نص المخالفة'])}</td>
+                            
+                            <td style="font-family: 'Traditional Arabic'; font-weight: normal; font-size: 14pt;">${toIndic(v['الدرجة'])}</td>
+                            
+                            <td style="font-family: 'Traditional Arabic'; font-weight: normal; font-size: 13pt;">${toIndic(v['التاريخ الهجري'])}</td>
+                            
+                            <td style="text-align: right; padding-right:5px; font-size:10pt; line-height: 1.4; padding-top: 5px; padding-bottom: 5px;">${procText}</td>
+                            
+                            <td></td>
+                        `;
+                        tbody_rs.appendChild(tr);
+                    });
+                }
+                break;
+            
+            // ===== النموذج 10: فرص تعويض (الهيكل المطور) =====
+            case 'tawid_darajat':
+                // 1. البيانات الأساسية للطالب
+                fillField('tawid_studentName', data.studentName);
+                fillField('tawid_grade', data.grade);
+                fillField('tawid_class', data.class);
+
+                // 2. بيانات المخالفة (تأتي من الواجهة الفخمة أو زر المخالفة)
+                if (data.violationInfo) {
+                    fillField('tawid_v_name', data.violationInfo.name);
+                    fillField('tawid_v_degree', data.violationInfo.degree, true);
+                    fillField('tawid_v_date', data.violationInfo.date, true);
+                    fillField('tawid_v_points', data.violationInfo.points, true);
+                }
+
+                // 3. التواقيع (الموجه والوكيل)
+                if (data.guideName) {
+                    fillField('tawid_guide', data.guideName);
+                }
+                if (data.deputyName) {
+                    fillField('tawid_deputy', data.deputyName);
+                }
+                break;
+            
+            // ===== نموذج 11: سلوك متميز =====
+            case 'rasd_tamayuz':
+                fillField('rasd_studentName', data.studentName);
+                fillField('rasd_grade', data.grade);
+                break;
+            
+            // ===== نموذج 12: غياب بدون عذر =====
+            case 'ghiab_bidon_ozr':
+                fillField('ghiab_no_studentName', data.studentName);
+                fillField('ghiab_no_grade', data.grade);
+                break;
+            
+            // ===== نموذج 13: غياب بعذر =====
+            case 'ghiab_ozr':
+                fillField('ghiab_ozr_studentName', data.studentName);
+                fillField('ghiab_ozr_grade', data.grade);
+                break;
+            
+            // ===== نموذج 14: تعهد حضور =====
+            case 'tahood_hodoor':
+                fillField('tahood_h_studentName', data.studentName);
+                fillField('tahood_h_grade', data.grade);
+                fillField('tahood_h_days', data.absenceDays, true);
+                fillField('tahood_h_sig_student', data.studentName);
+                break;
+
+                // ===== النموذج 15: تعهد جماعي (كشف تعهد) =====
+            case 'group_tahood':
+                // 1. تعبئة التاريخ
+                const d_gt = new Date();
+                const dayName_gt = d_gt.toLocaleDateString('ar-SA', {weekday: 'long'});
+                const dateStr_gt = data.violationDate || d_gt.toLocaleDateString('ar-SA-u-ca-islamic');
+                fillField('gt_date', dayName_gt + ' ' + dateStr_gt, true);
+
+                // 2. تعبئة اسم الوكيل
+                if (data.deputyName) {
+                    fillField('gt_deputy', data.deputyName);
+                }
+
+                // 3. بناء الجدول (الطلاب)
+                const tbody_gt = document.getElementById('gt_table_body');
+                if (tbody_gt && data.studentsList && data.studentsList.length > 0) {
+                    tbody_gt.innerHTML = ''; // مسح القديم
+
+                    data.studentsList.forEach((s, i) => {
+                        const tr = document.createElement('tr');
+                        const shortName = shortenName(s.name);
+                        
+                        tr.innerHTML = `
+                            <td class="indic-num">${toIndic(i + 1)}</td>
+                            <td style="text-align: right; padding-right:5px; font-weight:bold;">
+                                ${shortName}
+                            </td>
+                            <td>${s.grade}</td>
+                            <td class="indic-num">${toIndic(s.unexcused)}</td>
+                            <td class="indic-num">${toIndic(s.excused)}</td>
+                            <td></td> `;
+                        tbody_gt.appendChild(tr);
+                    });
+                }
+                break;
+            
+            // ===== نموذج 16: عقد التزام مدرسي =====
+            case 'iltizam_madrasi':
+                fillField('iltizam_name', data.studentName);
+                fillField('iltizam_grade', data.grade);
+                fillField('iltizam_day', data.violationDay);
+                fillField('iltizam_date', data.violationDate, true);
+                fillField('iltizam_student_sign', data.studentName);
+                break;
+            
+            // ===== نموذج 18: حالة عالية الخطورة =====
+            case 'high_risk':
+                fillField('risk_studentName', data.studentName);
+                fillField('risk_grade', data.grade);
+                break;
+            
+            // ===== نموذج 19: إبلاغ إيذاء =====
+            case 'eblagh_etha':
+                fillField('eblagh_victim_name', data.studentName);
+                fillField('eblagh_grade', data.grade);
+                break;
+            
+            // ===== نموذج 20: خطة تعديل سلوك =====
+            case 'khota_tadeel':
+                fillField('khota_studentName', data.studentName);
+                fillField('khota_grade', data.grade);
+                fillField('khota_class', data.class);
+                break;
+            
+            // ===== النماذج الفارغة =====
+            // ===== النماذج الفارغة (التي لا تحتاج تعبئة آلية) =====
+            case 'rasd_moalem':
+            case 'group_tahood':
+                break;
+                
+            // ===== حالة جديدة: نموذج إحالة غياب =====
+            case 'ehalat_absence':
+                fillField('ehala_abs_studentName', data.studentName);
+                fillField('ehala_abs_grade', data.grade);
+                // تعبئة الأرقام (True تعني تحويلها لأرقام هندية)
+                fillField('ehala_abs_unexcused', data.unexcusedDays, true);
+                fillField('ehala_abs_excused', data.excusedDays, true);
+                break;
+            default:
+                console.log('نموذج غير معرّف: ' + formId);
+        }
+        
+        // ضبط الخط ثم الطباعة (بتوقيت أطول)
+        setTimeout(function() {
+            adjustAllFields();
+            
+            setTimeout(function() {
+                window.print();
+            }, 400);
+        }, 300);
+    }
+
+    // =================================================================
+    // 7. دالة مساعدة لتعبئة جدول أعضاء اللجنة
+    // =================================================================
+    function fillCommitteeMembers(tableId, members) {
+        if (!members || !Array.isArray(members) || members.length === 0) return;
+        
+        const tbody = document.getElementById(tableId);
+        if (!tbody) return;
+        
+        const rows = tbody.querySelectorAll('tr');
+        
+        for (let i = 0; i < Math.min(members.length, rows.length); i++) {
+            const cells = rows[i].querySelectorAll('td');
+            if (cells.length >= 2) {
+                cells[1].innerText = members[i].name || members[i] || '';
+                if (cells.length >= 3 && members[i].role) {
+                    cells[2].innerText = members[i].role;
+                }
+            }
+        }
+    }
+
+    // =================================================================
+    // 8. تهيئة الصفحة عند التحميل
+    // =================================================================
+    document.addEventListener('DOMContentLoaded', function() {
+        document.querySelectorAll('.print-template').forEach(template => {
+            template.style.display = 'none';
+        });
+        console.log('✅ محرك الطباعة جاهز');
+    });
+</script>

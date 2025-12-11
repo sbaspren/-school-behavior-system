@@ -1,0 +1,779 @@
+<script>
+    // =================================================================
+    // 1. إعدادات النظام والمتغيرات
+    // =================================================================
+    
+    const SCHOOL_DAYS = 180;
+    let allAbsenceData = [];
+    let currentFilter = 'all';      // all, warning, danger, critical, mo_ref, mo_com, mo_risk, zero
+    let currentView = 'cards';      // cards, table
+    let currentSort = 'desc';       // desc, asc, alpha
+
+    function renderAbsencePage() {
+        const main = document.getElementById('main-content');
+        main.innerHTML = `
+            <div class="max-w-7xl mx-auto relative">
+                
+                <div id="loading-overlay" class="absolute inset-0 bg-white/90 z-50 hidden flex flex-col items-center justify-center backdrop-blur-sm rounded-xl">
+                    <div class="w-16 h-16 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mb-4"></div>
+                    <h3 class="text-lg font-bold text-gray-800">جاري معالجة البيانات...</h3>
+                    <p class="text-sm text-gray-500">يرجى الانتظار، قد تستغرق العملية بضع ثوانٍ</p>
+                </div>
+
+                <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
+                    <div>
+                        <h2 class="text-2xl font-bold text-gray-800">متابعة المواظبة والغياب</h2>
+                        <p class="text-sm text-gray-500 mt-1">تطبيق لائحة السلوك والمواظبة (المادة 33 و 34)</p>
+                    </div>
+                    <div class="flex gap-2">
+                        <button onclick="openPrintModal()" class="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm font-bold shadow-sm transition-all">
+                            <span class="material-symbols-outlined">print</span> طباعة القوائم
+                        </button>
+                        <input type="file" id="noor-file-upload" accept=".csv" class="hidden" onchange="handleNoorFile(this)">
+                        <button onclick="document.getElementById('noor-file-upload').click()" class="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 text-sm font-bold shadow-sm transition-all">
+                            <span class="material-symbols-outlined">upload_file</span> استيراد ملف نور
+                        </button>
+                    </div>
+                </div>
+
+                <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200 mb-6 sticky top-0 z-20 space-y-4">
+                    
+                    <div class="flex flex-wrap gap-3 items-center border-b border-gray-100 pb-3">
+                        <div class="relative w-96">
+                            <div class="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none text-gray-500">
+                                <span class="material-symbols-outlined text-[24px]">search</span>
+                            </div>
+                            <input type="text" id="abs-search" onkeyup="filterAbsence()" 
+                                placeholder="ابحث ببداية اسم الطالب..." 
+                                class="block w-full pr-12 py-4 border-gray-300 rounded-xl focus:ring-indigo-500 text-lg shadow-sm font-bold text-gray-700 placeholder-gray-400">
+                        </div>
+                        
+                        <select id="abs-grade-filter" onchange="filterAbsence()" class="px-3 py-2 rounded-lg border border-gray-300 text-sm bg-gray-50">
+                            <option value="">كل الصفوف</option>
+                        </select>
+
+                        <select id="abs-sort-filter" onchange="changeSort(this.value)" class="px-3 py-2 rounded-lg border border-gray-300 text-sm bg-gray-50">
+                            <option value="desc">الأكثر غياباً (تنازلي)</option>
+                            <option value="asc">الأقل غياباً (تصاعدي)</option>
+                            <option value="alpha">أبجدياً (أ-ي)</option>
+                        </select>
+
+                        <div class="flex bg-gray-100 rounded-lg p-1">
+                            <button onclick="toggleView('cards')" id="view-cards" class="p-1.5 rounded-md text-indigo-600 bg-white"><span class="material-symbols-outlined">grid_view</span></button>
+                            <button onclick="toggleView('table')" id="view-table" class="p-1.5 rounded-md text-gray-400"><span class="material-symbols-outlined">table_rows</span></button>
+                        </div>
+                    </div>
+
+                    <div class="flex flex-wrap items-center gap-2 overflow-x-auto p-2">
+                        
+                        <button onclick="setFilter('all')" id="btn-filter-all" class="abs-filter-btn active px-4 py-1.5 rounded-lg text-xs font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 border border-gray-200">الكل</button>
+                        <button onclick="setFilter('zero')" id="btn-filter-zero" class="abs-filter-btn px-4 py-1.5 rounded-lg text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 hover:bg-emerald-100 flex items-center gap-1"><span class="material-symbols-outlined text-[14px]">star</span> المنضبطين (0)</button>
+
+                        <div class="w-px h-6 bg-gray-300 mx-1"></div>
+
+                        <span class="text-[10px] font-bold text-red-500 bg-red-50 px-2 py-1 rounded border border-red-100">بدون عذر:</span>
+                        
+                        <button onclick="setFilter('warning')" id="btn-filter-warning" class="abs-filter-btn px-3 py-1.5 rounded-lg text-xs font-bold text-yellow-800 bg-yellow-50 border border-yellow-200 hover:bg-yellow-100">إنذار (3-4)</button>
+                        <button onclick="setFilter('danger')" id="btn-filter-danger" class="abs-filter-btn px-3 py-1.5 rounded-lg text-xs font-bold text-orange-800 bg-orange-50 border border-orange-200 hover:bg-orange-100">لجنة (5-9)</button>
+                        <button onclick="setFilter('critical')" id="btn-filter-critical" class="abs-filter-btn px-3 py-1.5 rounded-lg text-xs font-bold text-red-800 bg-red-50 border border-red-200 hover:bg-red-100">حماية (10+)</button>
+
+                        <div class="w-px h-6 bg-gray-300 mx-1"></div>
+
+                        <span class="text-[10px] font-bold text-blue-500 bg-blue-50 px-2 py-1 rounded border border-blue-100">بعذر:</span>
+
+                        <button onclick="setFilter('mo_ref')" id="btn-filter-mo_ref" class="abs-filter-btn px-3 py-1.5 rounded-lg text-xs font-bold text-sky-800 bg-sky-50 border border-sky-200 hover:bg-sky-100">إحالة موجه (3-4)</button>
+                        <button onclick="setFilter('mo_com')" id="btn-filter-mo_com" class="abs-filter-btn px-3 py-1.5 rounded-lg text-xs font-bold text-blue-800 bg-blue-50 border border-blue-200 hover:bg-blue-100">لجنة توجيه (5-9)</button>
+                        <button onclick="setFilter('mo_risk')" id="btn-filter-mo_risk" class="abs-filter-btn px-3 py-1.5 rounded-lg text-xs font-bold text-indigo-800 bg-indigo-50 border border-indigo-200 hover:bg-indigo-100">اشتباه إهمال (10+)</button>
+
+                    </div>
+                </div>
+
+                <div id="absence-container" class="min-h-[400px]">
+                    <div class="text-center py-12"><div class="loading-bar mx-auto"><div class="loading-bar-progress"></div></div><p class="text-gray-500 mt-4">جاري تحميل البيانات...</p></div>
+                </div>
+            </div>
+
+            <div id="edit-modal" class="fixed inset-0 bg-gray-900 bg-opacity-50 hidden z-50 flex justify-center items-center backdrop-blur-sm">
+                <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden transform transition-all scale-100">
+                    <div class="px-6 py-4 border-b border-gray-100 bg-gray-50 flex justify-between items-center">
+                        <h3 class="text-lg font-bold text-gray-800 flex items-center gap-2"><span class="material-symbols-outlined text-indigo-600">edit_note</span> تعديل سجل الغياب</h3>
+                        <button onclick="closeEditModal()" class="text-gray-400 hover:text-gray-600"><span class="material-symbols-outlined">close</span></button>
+                    </div>
+                    <div class="p-6 space-y-4">
+                        <div class="bg-indigo-50 p-3 rounded-lg border border-indigo-100 mb-4">
+                            <p class="text-sm text-indigo-800 font-bold" id="modal-student-name"></p>
+                            <p class="text-xs text-indigo-600" id="modal-student-grade"></p>
+                            <input type="hidden" id="modal-student-id">
+                        </div>
+                        <div class="grid grid-cols-3 gap-4 text-center">
+                            <div><label class="block text-xs font-bold text-red-600 mb-2">بدون عذر</label><input type="number" id="edit-unexcused" min="0" class="w-full text-center border-gray-300 rounded-lg"></div>
+                            <div><label class="block text-xs font-bold text-green-600 mb-2">بعذر</label><input type="number" id="edit-excused" min="0" class="w-full text-center border-gray-300 rounded-lg"></div>
+                            <div><label class="block text-xs font-bold text-yellow-600 mb-2">تأخير</label><input type="number" id="edit-late" min="0" class="w-full text-center border-gray-300 rounded-lg"></div>
+                        </div>
+                    </div>
+                    <div class="px-6 py-4 bg-gray-50 flex justify-end gap-3">
+                        <button onclick="closeEditModal()" class="px-4 py-2 text-sm font-bold text-gray-600 hover:bg-gray-200 rounded-lg">إلغاء</button>
+                        <button onclick="saveManualAbsence()" class="px-6 py-2 text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg shadow-md flex items-center gap-2">حفظ</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="print-modal" class="fixed inset-0 bg-gray-900 bg-opacity-50 hidden z-50 flex justify-center items-center backdrop-blur-sm">
+                <div class="bg-white rounded-xl shadow-2xl w-full max-w-sm overflow-hidden">
+                    <div class="px-5 py-4 border-b border-gray-100 bg-gray-50"><h3 class="font-bold text-gray-800">طباعة التقارير</h3></div>
+                    <div class="p-5 space-y-4">
+                        <div>
+                            <label class="block text-xs font-bold text-gray-600 mb-1">نوع التقرير</label>
+                            <select id="print-type" class="w-full border-gray-300 rounded-lg text-sm">
+                                <option value="class_report">كشف متابعة غياب</option>
+                                <option value="discipline_report">كشف المتميزين بالانضباط</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-600 mb-1">الصف والفصل</label>
+                            <select id="print-filter-class" class="w-full border-gray-300 rounded-lg text-sm"><option value="">الكل</option></select>
+                        </div>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div><label class="block text-xs font-bold text-gray-600 mb-1">من تاريخ</label><input type="date" id="print-date-from" class="w-full border-gray-300 rounded-lg text-sm"></div>
+                            <div><label class="block text-xs font-bold text-gray-600 mb-1">إلى تاريخ</label><input type="date" id="print-date-to" class="w-full border-gray-300 rounded-lg text-sm"></div>
+                        </div>
+                    </div>
+                    <div class="px-5 py-3 bg-gray-50 flex justify-end gap-2">
+                        <button onclick="document.getElementById('print-modal').classList.add('hidden')" class="px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-200 rounded-lg">إلغاء</button>
+                        <button onclick="executePrint()" class="px-4 py-1.5 text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg flex items-center gap-2"><span class="material-symbols-outlined text-[16px]">print</span> طباعة</button>
+                    </div>
+                </div>
+            </div>
+        `;
+        loadAbsenceData();
+    }
+
+    // =================================================================
+    // 2. منطق البيانات والتحميل
+    // =================================================================
+
+    function loadAbsenceData() {
+        google.script.run
+        .withSuccessHandler(data => {
+            allAbsenceData = data;
+            populateAbsenceFilters();
+            filterAbsence();
+        })
+        .withFailureHandler(error => {
+            showEnhancedToast('danger', 'فشل تحميل البيانات: ' + error.message);
+            document.getElementById('absence-container').innerHTML = '<div class="col-span-full text-center text-red-500 font-bold">خطأ في الاتصال</div>';
+        })
+        .getAbsenceDashboardData();
+    }
+
+    function handleNoorFile(input) {
+        if (input.files && input.files[0]) {
+            document.getElementById('loading-overlay').classList.remove('hidden');
+            const file = input.files[0];
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const content = e.target.result;
+                google.script.run
+                .withSuccessHandler(response => {
+                    document.getElementById('loading-overlay').classList.add('hidden');
+                    input.value = ''; 
+                    if (response.success) {
+                        showEnhancedToast('success', response.message);
+                        loadAbsenceData(); 
+                    } else {
+                        showEnhancedToast('danger', 'خطأ: ' + response.error);
+                    }
+                })
+                .processNoorAbsenceFile(content);
+            };
+            reader.readAsText(file); 
+        }
+    }
+
+    // =================================================================
+    // 3. الفلاتر والترتيب (Logic) - تم التعديل هنا
+    // =================================================================
+
+    function populateAbsenceFilters() {
+        const grades = [...new Set(allAbsenceData.map(d => d.grade))].filter(g => g);
+        const gradeOrder = ["أول", "ثاني", "ثالث", "رابع", "خامس", "سادس"];
+        grades.sort((a, b) => {
+            const indexA = gradeOrder.findIndex(key => a.includes(key));
+            const indexB = gradeOrder.findIndex(key => b.includes(key));
+            if (indexA !== -1 && indexB !== -1) return indexA - indexB;
+            return a.localeCompare(b, 'ar');
+        });
+        const select = document.getElementById('abs-grade-filter');
+        select.innerHTML = '<option value="">كل الصفوف</option>';
+        grades.forEach(g => select.add(new Option(g, g)));
+        
+        const printSelect = document.getElementById('print-filter-class');
+        printSelect.innerHTML = '<option value="">الكل (حسب الفلتر)</option>';
+        grades.forEach(g => printSelect.add(new Option(g, g)));
+    }
+
+    function changeSort(val) { currentSort = val; filterAbsence(); }
+    function toggleView(view) { currentView = view; updateViewButtons(); filterAbsence(); }
+    function updateViewButtons() {
+        document.getElementById('view-cards').className = currentView === 'cards' ? 'p-1.5 rounded-md text-indigo-600 bg-white shadow-sm' : 'p-1.5 rounded-md text-gray-400 hover:text-gray-600';
+        document.getElementById('view-table').className = currentView === 'table' ? 'p-1.5 rounded-md text-indigo-600 bg-white shadow-sm' : 'p-1.5 rounded-md text-gray-400 hover:text-gray-600';
+    }
+
+    function setFilter(type) {
+        currentFilter = type;
+        document.querySelectorAll('.abs-filter-btn').forEach(b => {
+            b.classList.remove('ring-2', 'ring-offset-1', 'ring-indigo-500', 'shadow-md');
+            b.style.opacity = '0.7'; 
+        });
+        const activeBtn = document.getElementById(`btn-filter-${type}`);
+        if(activeBtn) {
+            activeBtn.classList.add('ring-2', 'ring-offset-1', 'ring-indigo-500', 'shadow-md');
+            activeBtn.style.opacity = '1';
+        }
+        filterAbsence();
+    }
+
+    function filterAbsence() {
+        const searchText = document.getElementById('abs-search').value.toLowerCase();
+        const gradeFilter = document.getElementById('abs-grade-filter').value;
+        
+        let filtered = allAbsenceData.filter(d => {
+            if (searchText && !d.name.toLowerCase().includes(searchText)) return false;
+            if (gradeFilter && d.grade !== gradeFilter) return false;
+            
+            const u = d.unexcused;
+            const e = d.excused;
+
+            if (currentFilter === 'warning') return u >= 3 && u < 5;
+            if (currentFilter === 'danger') return u >= 5 && u < 10;
+            if (currentFilter === 'critical') return u >= 10;
+            
+            if (currentFilter === 'mo_ref') return e >= 3 && e < 5;
+            if (currentFilter === 'mo_com') return e >= 5 && e < 10;
+            if (currentFilter === 'mo_risk') return e >= 10;
+            
+            // ============================================
+            // 🔥 الإصلاح: شرط المنضبطين (لا غياب مطلقاً)
+            // ============================================
+            if (currentFilter === 'zero') return u === 0 && e === 0;
+            
+            return true;
+        });
+
+        filtered.sort((a, b) => {
+            if (currentSort === 'asc') {
+                if (a.unexcused !== b.unexcused) return a.unexcused - b.unexcused;
+                return a.excused - b.excused;
+            }
+            if (currentSort === 'desc') {
+                if (a.unexcused !== b.unexcused) return b.unexcused - a.unexcused;
+                return b.excused - a.excused;
+            }
+            if (currentSort === 'alpha') return a.name.localeCompare(b.name, 'ar');
+            return 0;
+        });
+
+        const container = document.getElementById('absence-container');
+        if (filtered.length === 0) {
+            container.innerHTML = '<div class="col-span-full flex flex-col items-center justify-center py-16 text-gray-400 opacity-60"><span class="material-symbols-outlined text-6xl mb-2">search_off</span><p>لا توجد نتائج مطابقة</p></div>';
+            return;
+        }
+
+        if (currentView === 'cards') renderCards(filtered, container);
+        else renderTable(filtered, container);
+    }
+
+    // دالة الطباعة المحدثة لاستقبال البيانات التفصيلية
+    function printAbsenceReferral(name, grade, unexcused, excused) {
+        const data = {
+            studentName: name,
+            grade: grade,
+            unexcusedDays: unexcused,
+            excusedDays: excused,
+            // التاريخ الهجري الحالي
+            violationDate: new Date().toLocaleDateString('ar-SA-u-ca-islamic')
+        };
+        // استدعاء النموذج الجديد ehalat_absence
+        printFormDirectly('ehalat_absence', encodeURIComponent(JSON.stringify(data)));
+    }
+
+    function printMahdarLajnahAbsence(name, grade, unexcused, excused) {
+  const now = new Date();
+  const islamicDate = now.toLocaleDateString('ar-SA-u-ca-islamic');
+  const dayName = now.toLocaleDateString('ar-SA', { weekday: 'long' });
+
+  const data = {
+    studentName: name,
+    grade: grade,
+    violationDate: islamicDate,
+    violationDay: dayName,
+    unexcusedDays: unexcused,
+    excusedDays: excused
+  };
+
+  printFormDirectly('mahdarlajnahabsence', encodeURIComponent(JSON.stringify(data)));
+}
+
+
+    // =================================================================
+    // 4. طرق العرض (Renderers)
+    // =================================================================
+
+    // تحديث دالة رسم البطاقات لربط الزر بالدالة الجديدة
+    function renderCards(data, container) {
+        let html = '<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">';
+        data.forEach(student => {
+            let conductScore = Math.max(0, 100 - student.unexcused);
+            let scoreColor = conductScore >= 90 ? 'text-emerald-600 bg-emerald-50 border-emerald-200' : (conductScore >= 80 ? 'text-orange-600 bg-orange-50 border-orange-200' : 'text-red-600 bg-red-50 border-red-200');
+
+            let actionButtons = '';
+            
+            // --- 1. معالجة الغياب بدون عذر ---
+if (student.unexcused >= 3) {
+    let lbl, clr, onclickCode;
+
+    if (student.unexcused >= 10) {
+        // حماية (10+) = نفس النموذج القديم high_risk
+        lbl = 'حماية (10)';
+        clr = 'text-red-700 bg-red-50';
+        onclickCode = `printAbsenceForm('high_risk', '${student.name}', '${student.grade}', ${student.unexcused}, 'unexcused')`;
+    } else if (student.unexcused >= 5) {
+        // لجنة (5-9) = محضر لجنة الغياب مع تمرير بعذر/بدون عذر
+        lbl = 'لجنة (5)';
+        clr = 'text-orange-700 bg-orange-50';
+        onclickCode = `printMahdarLajnahAbsence('${student.name}', '${student.grade}', ${student.unexcused}, ${student.excused})`;
+    } else {
+        // تعهد (3-4) = نفس نموذج التعهد القديم
+        lbl = 'تعهد (3)';
+        clr = 'text-yellow-700 bg-yellow-50';
+        onclickCode = `printAbsenceForm('tahood_hodoor', '${student.name}', '${student.grade}', ${student.unexcused}, 'unexcused')`;
+    }
+
+    // الزر الأساسي (تعهد/لجنة/حماية)
+    actionButtons += `<button onclick="${onclickCode}" class="w-full mb-1 flex items-center justify-center gap-2 py-1.5 rounded border text-xs font-bold ${clr}"><span class="material-symbols-outlined text-[14px]">warning</span> ${lbl}</button>`;
+
+    // زر التحويل للموجه (كما هو)
+    actionButtons += `<button onclick="printAbsenceReferral('${student.name}', '${student.grade}', ${student.unexcused}, ${student.excused})" class="w-full mb-1 flex items-center justify-center gap-2 py-1.5 rounded border text-sky-700 bg-sky-50 border-sky-200 text-xs font-bold hover:bg-sky-100"><span class="material-symbols-outlined text-[14px]">person_search</span> تحويل للموجه</button>`;
+
+    // زر السجل (كما هو)
+    actionButtons += `<button onclick="printAbsenceForm('ghiab_bidon_ozr', '${student.name}', '${student.grade}', ${student.unexcused}, 'unexcused')" class="w-full mb-2 flex items-center justify-center gap-2 py-1.5 rounded border text-gray-600 text-xs font-bold hover:bg-gray-50"><span class="material-symbols-outlined text-[14px]">history_edu</span> سجل</button>`;
+}
+
+
+            // --- 2. معالجة الغياب بعذر ---
+            if (student.excused > 0) {
+                // زر نموذج العذر
+                actionButtons += `<button onclick="printAbsenceForm('ghiab_ozr', '${student.name}', '${student.grade}', ${student.excused}, 'excused')" class="w-full mb-1 flex items-center justify-center gap-2 py-1.5 rounded border text-emerald-700 bg-emerald-50 text-xs font-bold"><span class="material-symbols-outlined text-[14px]">verified</span> نموذج عذر</button>`;
+                
+                // 🔥 [تحديث] زر التحويل للموجه (يظهر أيضاً إذا كان الغياب بعذر مرتفعاً، مع شرط عدم التكرار)
+                if (student.excused >= 3 && student.unexcused < 3) { 
+                     actionButtons += `<button onclick="printAbsenceReferral('${student.name}', '${student.grade}', ${student.unexcused}, ${student.excused})" class="w-full mb-1 flex items-center justify-center gap-2 py-1.5 rounded border text-sky-700 bg-sky-50 border-sky-200 text-xs font-bold hover:bg-sky-100"><span class="material-symbols-outlined text-[14px]">person_search</span> تحويل للموجه</button>`;
+                }
+                
+                // زر لجنة التوجيه
+if (student.excused >= 5)
+    actionButtons += `<button onclick="printMahdarLajnahAbsence('${student.name}', '${student.grade}', ${student.unexcused}, ${student.excused})" class="w-full mb-1 text-[10px] text-indigo-600 hover:underline text-center">لجنة توجيه</button>`;
+            }
+            
+            html += `
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-all overflow-hidden">
+                    <div class="p-3 border-b border-gray-50 flex justify-between items-start">
+                        <div>
+                            <div class="flex items-center gap-1">
+                                <h3 class="font-bold text-gray-800 text-sm truncate max-w-[150px]" title="${student.name}">${student.name}</h3>
+                                <button onclick='openEditModal(${JSON.stringify(student)})' class="text-gray-300 hover:text-indigo-600"><span class="material-symbols-outlined text-[16px]">edit_note</span></button>
+                            </div>
+                            <p class="text-[10px] text-gray-500 font-medium">${student.grade}/${student.class}</p>
+                        </div>
+                        <span class="px-2 py-0.5 rounded text-[10px] font-bold border ${scoreColor}">${toIndic(conductScore)}%</span>
+                    </div>
+                    <div class="grid grid-cols-3 divide-x divide-x-reverse divide-gray-100 bg-gray-50/50">
+                        <div class="p-2 text-center"><div class="text-[9px] text-gray-500">بدون عذر</div><div class="text-lg font-bold ${student.unexcused>0?'text-red-600':'text-gray-600'}">${toIndic(student.unexcused)}</div></div>
+                        <div class="p-2 text-center"><div class="text-[9px] text-gray-500">بعذر</div><div class="text-lg font-bold ${student.excused>0?'text-emerald-600':'text-gray-600'}">${toIndic(student.excused)}</div></div>
+                        <div class="p-2 text-center"><div class="text-[9px] text-gray-500">تأخير</div><div class="text-lg font-bold ${student.late>0?'text-yellow-600':'text-gray-600'}">${toIndic(student.late)}</div></div>
+                    </div>
+                    <div class="p-2 border-t border-gray-100 bg-white">${actionButtons || '<div class="text-center text-[10px] text-gray-400 py-1">سجل نظيف</div>'}</div>
+                </div>
+            `;
+        });
+        html += '</div>';
+        container.innerHTML = html;
+    }
+
+    function renderTable(data, container) {
+        let html = `
+            <div id="group-actions-bar" class="hidden fixed bottom-6 left-1/2 transform -translate-x-1/2 bg-gray-900 text-white px-4 py-3 rounded-xl shadow-2xl z-50 flex items-center gap-3 animate-bounce-in border border-gray-700">
+                
+                <div class="flex flex-col items-center border-l border-gray-700 pl-3 ml-1">
+                    <span class="font-bold text-xs text-yellow-400" id="selected-count">0</span>
+                    <span class="text-[10px] text-gray-400">طالب محدد</span>
+                </div>
+
+                <div class="flex flex-col gap-1">
+                    <label class="text-[9px] text-gray-400">تاريخ النماذج (اختياري)</label>
+                    <input type="date" id="group-custom-date" class="bg-gray-800 border border-gray-600 text-white text-xs rounded px-2 py-1 outline-none focus:border-indigo-500 h-8">
+                </div>
+
+                <div class="h-8 w-px bg-gray-700 mx-1"></div>
+
+                <div class="flex gap-2">
+                    <button onclick="executeCollectivePrint('group_tahood', 'unexcused')" class="px-3 py-1.5 bg-indigo-700 hover:bg-indigo-600 rounded-lg text-xs font-bold transition-colors flex items-center gap-1 shadow-sm border border-indigo-500">
+                        <span class="material-symbols-outlined text-[14px]">checklist</span> كشف تعهد
+                    </button>
+                    <button onclick="executeCollectivePrint('group_ehala', 'auto')" class="px-3 py-1.5 bg-teal-700 hover:bg-teal-600 rounded-lg text-xs font-bold transition-colors flex items-center gap-1 shadow-sm border border-teal-500">
+                        <span class="material-symbols-outlined text-[14px]">send</span> كشف إحالة
+                    </button>
+                </div>
+
+                <div class="h-8 w-px bg-gray-700 mx-1"></div>
+
+                <div class="flex gap-1">
+                     <button onclick="executeGroupPrint('tahood_hodoor', 'unexcused')" class="px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded text-[10px] transition-colors" title="طباعة فردية متتابعة">تعهد فردي</button>
+                     <button onclick="executeGroupPrint('ehalat_talib', 'auto')" class="px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded text-[10px] transition-colors" title="طباعة فردية متتابعة">إحالة فردية</button>
+                </div>
+
+                <button onclick="deselectAllTable()" class="mr-2 text-gray-400 hover:text-red-400"><span class="material-symbols-outlined text-[20px]">cancel</span></button>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden mb-20">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-4 py-3 text-right w-10">
+                                <input type="checkbox" id="select-all-checkbox" onchange="toggleSelectAllTable(this)" class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 w-4 h-4 cursor-pointer">
+                            </th>
+                            <th class="px-4 py-3 text-right text-xs font-medium text-gray-500">الطالب</th>
+                            <th class="px-4 py-3 text-right text-xs font-medium text-gray-500">الصف</th>
+                            <th class="px-4 py-3 text-center text-xs font-medium text-gray-500">بدون عذر</th>
+                            <th class="px-4 py-3 text-center text-xs font-medium text-gray-500">بعذر</th>
+                            <th class="px-4 py-3 text-center text-xs font-medium text-gray-500">المواظبة</th>
+                            <th class="px-4 py-3 text-right text-xs font-medium text-gray-500">إجراء</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-200">
+        `;
+        data.forEach(s => {
+            let score = Math.max(0, 100 - s.unexcused);
+            let rowClass = s.unexcused >= 5 ? 'bg-red-50' : (s.unexcused >= 3 ? 'bg-yellow-50' : '');
+            let studentData = encodeURIComponent(JSON.stringify({name: s.name, grade: s.grade, unexcused: s.unexcused, excused: s.excused}));
+
+            html += `
+                <tr class="${rowClass} hover:bg-gray-50 transition-colors">
+                    <td class="px-4 py-3 text-right">
+                        <input type="checkbox" onchange="updateGroupActionsUI()" value="${studentData}" class="student-checkbox rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 w-4 h-4 cursor-pointer">
+                    </td>
+                    <td class="px-4 py-3 text-sm font-bold text-gray-900 flex items-center gap-2">
+                        ${s.name} <button onclick='openEditModal(${JSON.stringify(s)})' class="text-gray-400 hover:text-indigo-600"><span class="material-symbols-outlined text-[16px]">edit_note</span></button>
+                    </td>
+                    <td class="px-4 py-3 text-sm text-gray-500">${s.grade} / ${s.class}</td>
+                    <td class="px-4 py-3 text-sm text-center font-bold ${s.unexcused>0?'text-red-600':'text-gray-400'}">${toIndic(s.unexcused)}</td>
+                    <td class="px-4 py-3 text-sm text-center font-bold ${s.excused>0?'text-emerald-600':'text-gray-400'}">${toIndic(s.excused)}</td>
+                    <td class="px-4 py-3 text-sm text-center font-bold">${toIndic(score)}%</td>
+                    <td class="px-4 py-3 text-sm">
+                        ${s.unexcused>=3 ? `<button onclick="printAbsenceForm('tahood_hodoor', '${s.name}', '${s.grade}', ${s.unexcused}, 'unexcused')" class="text-indigo-600 hover:underline text-xs font-bold">تعهد</button>` : ''}
+                    </td>
+                </tr>
+            `;
+        });
+        html += '</tbody></table></div>';
+        container.innerHTML = html;
+    }
+
+    // =================================================================
+    // 5. الطباعة والتقارير (الكود الثابت والنهائي)
+    // =================================================================
+// =================================================================
+    // دالة جديدة مخصصة لطباعة إحالة الغياب (ترسل الرقمين معاً)
+    // =================================================================
+    function printAbsenceReferral(name, grade, unexcused, excused) {
+        const data = {
+            studentName: name,
+            grade: grade,
+            unexcusedDays: unexcused, // إرسال رقم الغياب بدون عذر
+            excusedDays: excused,     // إرسال رقم الغياب بعذر
+            // إضافة التاريخ الهجري الحالي تلقائياً
+            violationDate: new Date().toLocaleDateString('ar-SA-u-ca-islamic')
+        };
+        // توجيه الأمر لفتح النموذج الجديد الذي صممناه (ehalat_absence)
+        printFormDirectly('ehalat_absence', encodeURIComponent(JSON.stringify(data)));
+    }
+
+
+function printAbsenceForm(formId, name, grade, days, type) {
+  const now = new Date();
+  const islamicDate = now.toLocaleDateString('ar-SA-u-ca-islamic');
+  const dayName = now.toLocaleDateString('ar-SA', { weekday: 'long' });
+
+  const data = {
+    studentName: name,
+    grade: grade,
+    violationDate: islamicDate,
+    violationDay: dayName,
+    violationText: type === 'unexcused' ? toIndic(days) : toIndic(days)
+  };
+
+  printFormDirectly(formId, encodeURIComponent(JSON.stringify(data)));
+}
+
+
+    function openPrintModal() {
+        document.getElementById('print-modal').classList.remove('hidden');
+        document.getElementById('print-date-to').valueAsDate = new Date();
+    }
+
+    function executePrint() {
+        const type = document.getElementById('print-type').value;
+        const gradeFilter = document.getElementById('print-filter-class').value;
+        const dFrom = document.getElementById('print-date-from').value;
+        const dTo = document.getElementById('print-date-to').value;
+        
+        let filtered = allAbsenceData.filter(d => !gradeFilter || d.grade === gradeFilter);
+        
+        if (type === 'discipline_report') {
+            // كشف المنضبطين: لا غياب بدون عذر ولا بعذر
+            filtered = filtered.filter(d => d.unexcused === 0 && d.excused === 0);
+        } else {
+            // كشف متابعة الغياب: نرتب حسب الأكثر غياباً
+            filtered.sort((a, b) => b.unexcused - a.unexcused);
+        }
+
+        const title = type === 'discipline_report' ? 'كشف الطلاب المتميزين بالانضباط المدرسي (سجل نظيف)' : `كشف متابعة غياب الطلاب - ${gradeFilter || 'الكل'}`;
+        const win = window.open('', '_blank');
+        const kliekImageUrl = "https://i.ibb.co/5WxLGJPD/2025-11-15-233559.png";
+        
+        let rows = '';
+        filtered.forEach((s, i) => {
+            const score = 100 - s.unexcused;
+            let bg = '';
+            if (type !== 'discipline_report') {
+                if (s.unexcused >= 10) bg = 'background-color: #fee2e2 !important;'; 
+                else if (s.unexcused >= 5) bg = 'background-color: #ffedd5 !important;'; 
+                else if (s.unexcused >= 3) bg = 'background-color: #fef3c7 !important;'; 
+            }
+
+            const cls = toIndic(s.class.toString());
+
+            rows += `<tr style="${bg}">
+                <td style="text-align:center;">${toIndic(i+1)}</td>
+                <td style="text-align:center; font-weight:bold;">${s.name}</td>
+                <td style="text-align:center;">${s.grade} / ${cls}</td>
+                <td style="text-align:center; font-weight:bold;">${toIndic(s.unexcused)}</td>
+                <td style="text-align:center;">${toIndic(s.excused)}</td>
+                <td style="text-align:center;">${toIndic(score)}</td>
+                <td></td>
+            </tr>`;
+        });
+
+        const content = `
+            <!DOCTYPE html>
+            <html lang="ar" dir="rtl">
+            <head><title>تقرير الغياب</title>
+            <style>
+                @page { size: A4 portrait; margin: 10mm; } 
+                body { 
+                    font-family: 'Traditional Arabic', serif;
+                    -webkit-print-color-adjust: exact; 
+                    print-color-adjust: exact; 
+                    margin: 0; padding: 0;
+                }
+                table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+                th, td { border: 1px solid #000; padding: 4px; font-size: 12pt; text-align: center; word-wrap: break-word; }
+                th { background: #f0f0f0; font-weight: bold; }
+                thead { display: table-header-group; }
+                tfoot { display: table-footer-group; }
+                .spacer-row td { border: none !important; height: 50px; }
+            </style>
+            </head>
+            <body>
+                <table>
+                    <colgroup>
+                        <col style="width: 5%;"> <col style="width: 35%;"> <col style="width: 15%;"> <col style="width: 10%;"> <col style="width: 10%;"> <col style="width: 10%;"> <col style="width: 15%;">
+                    </colgroup>
+                    <thead>
+                        <tr>
+                            <th colspan="7" style="border:none; padding-bottom:10px; background:none;">
+                                <div style="text-align:center;"><img src="${kliekImageUrl}" style="height:70px;"></div>
+                                <div style="text-align:center; font-size:16pt; font-weight:bold; margin:5px 0;">${title}</div>
+                                <div style="text-align:center; font-size:11pt;">من تاريخ: ${toIndic(dFrom)} إلى تاريخ: ${toIndic(dTo)}</div>
+                            </th>
+                        </tr>
+                        <tr>
+                            <th>م</th> <th>اسم الطالب</th> <th>الصف/الفصل</th> <th>بدون عذر</th> <th>بعذر</th> <th>المواظبة</th> <th>ملاحظات</th>
+                        </tr>
+                    </thead>
+                    <tbody>${rows}</tbody>
+                    <tfoot><tr class="spacer-row"><td colspan="7"></td></tr></tfoot>
+                </table>
+            </body>
+            </html>
+        `;
+        win.document.write(content);
+        win.document.close();
+        setTimeout(() => { win.print(); document.getElementById('print-modal').classList.add('hidden'); }, 500);
+    }
+
+    // =================================================================
+    // 6. التعديل اليدوي
+    // =================================================================
+    
+    function openEditModal(student) {
+        document.getElementById('edit-modal').classList.remove('hidden');
+        document.getElementById('modal-student-name').innerText = student.name;
+        document.getElementById('modal-student-grade').innerText = student.grade + ' / ' + student.class;
+        document.getElementById('modal-student-id').value = student.id;
+        
+        document.getElementById('edit-unexcused').value = student.unexcused;
+        document.getElementById('edit-excused').value = student.excused;
+        document.getElementById('edit-late').value = student.late;
+    }
+
+    function closeEditModal() {
+        document.getElementById('edit-modal').classList.add('hidden');
+    }
+
+    function saveManualAbsence() {
+        const id = document.getElementById('modal-student-id').value;
+        const unexcused = document.getElementById('edit-unexcused').value;
+        const excused = document.getElementById('edit-excused').value;
+        const late = document.getElementById('edit-late').value;
+
+        closeEditModal();
+        showEnhancedToast('info', 'جاري حفظ التعديلات...');
+        google.script.run
+        .withSuccessHandler(res => {
+            if(res.success) {
+                showEnhancedToast('success', 'تم تعديل السجل بنجاح');
+                loadAbsenceData(); 
+            } else {
+                showEnhancedToast('danger', 'فشل التعديل: ' + res.error);
+            }
+        })
+        .updateStudentAbsence({id, unexcused, excused, late});
+    }
+
+    // =================================================================
+    // 7. منطق الإجراءات الجماعية (Group Actions Logic)
+    // =================================================================
+
+    function toggleSelectAllTable(source) {
+        document.querySelectorAll('.student-checkbox').forEach(cb => cb.checked = source.checked);
+        updateGroupActionsUI();
+    }
+
+    function deselectAllTable() {
+        document.querySelectorAll('.student-checkbox').forEach(cb => cb.checked = false);
+        const headerCb = document.getElementById('select-all-checkbox');
+        if(headerCb) headerCb.checked = false;
+        updateGroupActionsUI();
+    }
+
+    function updateGroupActionsUI() {
+        const checkedBoxes = document.querySelectorAll('.student-checkbox:checked');
+        const bar = document.getElementById('group-actions-bar');
+        
+        if (checkedBoxes.length > 0) {
+            bar.classList.remove('hidden');
+            bar.classList.add('flex');
+            document.getElementById('selected-count').innerText = `${checkedBoxes.length} طالب محدد`;
+        } else {
+            bar.classList.add('hidden');
+            bar.classList.remove('flex');
+        }
+    }
+
+    function executeGroupPrint(formId, typeContext) {
+        const checkedBoxes = document.querySelectorAll('.student-checkbox:checked');
+        if (checkedBoxes.length === 0) return;
+
+        showEnhancedToast('info', 'جاري تحضير النماذج...');
+        let delay = 0;
+        checkedBoxes.forEach((cb, index) => {
+            const s = JSON.parse(decodeURIComponent(cb.value));
+            
+            let days = 0;
+            let type = typeContext;
+
+            if (typeContext === 'auto') {
+                if (s.unexcused >= s.excused) { days = s.unexcused; type = 'unexcused'; }
+                else { days = s.excused; type = 'excused'; }
+            } else if (typeContext === 'unexcused') {
+                days = s.unexcused;
+            } else {
+                days = s.excused;
+            }
+
+            setTimeout(() => {
+                printAbsenceForm(formId, s.name, s.grade, days, type);
+            }, delay);
+            
+            delay += 1500;
+        });
+        deselectAllTable();
+    }
+
+    // =================================================================
+    // دالة الطباعة الجماعية (محدثة لإرسال اسم الوكيل)
+    // =================================================================
+    function executeCollectivePrint(formId, typeContext) {
+        const checkedBoxes = document.querySelectorAll('.student-checkbox:checked');
+        if (checkedBoxes.length === 0) {
+            showEnhancedToast('danger', 'يرجى اختيار طالب واحد على الأقل');
+            return;
+        }
+
+        // 1. جلب التاريخ المخصص أو استخدام تاريخ اليوم
+        const dateInput = document.getElementById('group-custom-date').value;
+        const customDate = dateInput ? new Date(dateInput) : new Date();
+
+        showEnhancedToast('info', 'جاري إنشاء الكشف الجماعي...');
+
+        // 2. تجميع بيانات الطلاب
+        let studentsList = [];
+        checkedBoxes.forEach(cb => {
+            const s = JSON.parse(decodeURIComponent(cb.value));
+            studentsList.push({ 
+                name: s.name, 
+                grade: s.grade, 
+                unexcused: s.unexcused, 
+                excused: s.excused      
+            });
+        });
+
+        // 3. (جديد) جلب اسم الوكيل من الإعدادات
+        // يفترض أن الإعدادات محملة مسبقاً في المتغير APP_DATA.settings
+        let deputyName = '';
+        if (APP_DATA.settings && APP_DATA.settings.deputies && APP_DATA.settings.deputies.length > 0) {
+            // نأخذ الاسم الأول من قائمة الوكلاء
+            deputyName = APP_DATA.settings.deputies[0].name;
+        }
+
+        // 4. إرسال حزمة البيانات للطباعة
+        const data = {
+            violationDate: customDate.toLocaleDateString('ar-SA-u-ca-islamic'),
+            studentsList: studentsList,
+            deputyName: deputyName // <--- إرسال اسم الوكيل ليظهر في النموذج
+        };
+
+        // استدعاء الطباعة وتفريغ التحديد
+        printFormDirectly(formId, encodeURIComponent(JSON.stringify(data)));
+        deselectAllTable();
+    }
+
+    function printMahdarLajnahAbsence(name, grade, unexcused, excused) {
+  const now = new Date();
+  const islamicDate = now.toLocaleDateString('ar-SA-u-ca-islamic');
+  const dayName = now.toLocaleDateString('ar-SA', { weekday: 'long' });
+
+  const data = {
+    studentName: name,
+    grade: grade,
+    violationDate: islamicDate,
+    violationDay: dayName,
+    unexcusedDays: unexcused,
+    excusedDays: excused
+  };
+
+  printFormDirectly('mahdar_lajnah_absence', encodeURIComponent(JSON.stringify(data)));
+}
+
+</script>

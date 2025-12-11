@@ -1,0 +1,152 @@
+<script>
+    // =================================================================
+    // 1. رسم الصفحة (Rendering)
+    // =================================================================
+    function renderGeneralFormsPage() {
+        const main = document.getElementById('main-content');
+        main.innerHTML = `
+            <div class="max-w-6xl mx-auto">
+                <h2 class="text-2xl font-bold text-gray-800 mb-6">النماذج العامة والإدارية</h2>
+                
+                <!-- قسم اختيار الطالب -->
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200 mb-8">
+                    <div class="flex items-center gap-2 mb-4 text-gray-500 text-sm">
+                        <span class="material-symbols-outlined">info</span>
+                        <span>حدد الطالب لتعبئة بياناته، أو اترك الخانات فارغة لطباعة النماذج العامة (مثل سجل المعلم).</span>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div><label class="block text-sm mb-1">الصف</label><select id="gf-grade" onchange="gfPopulateClasses()" class="w-full border-gray-300 rounded-lg"><option value="">اختر الصف</option></select></div>
+                        <div><label class="block text-sm mb-1">الفصل</label><select id="gf-class" onchange="gfPopulateStudents()" disabled class="w-full border-gray-300 rounded-lg"><option value="">اختر الفصل</option></select></div>
+                        <div><label class="block text-sm mb-1">الطالب</label><select id="gf-student" class="w-full border-gray-300 rounded-lg" disabled><option value="">اختر الطالب</option></select></div>
+                    </div>
+                </div>
+                
+                <!-- 1. المواظبة والغياب -->
+                <h3 class="font-bold text-gray-700 mb-3">المواظبة والغياب:</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+                    ${createGeneralFormCard('ghiab_bidon_ozr', 'متابعة غياب (بدون عذر)', 'سجل تدرج الإجراءات للملف', 'text-red-600')}
+                    ${createGeneralFormCard('ghiab_ozr', 'إجراءات غياب (بعذر)', 'توثيق الأعذار المقبولة', 'text-green-600')}
+                    ${createGeneralFormCard('tahood_hodoor', 'تعهد التزام بالحضور', 'عند تجاوز الغياب للحد المسموح', 'text-orange-600')}
+                </div>
+
+                <!-- 2. الإجراءات السلوكية والفردية -->
+                <h3 class="font-bold text-gray-700 mb-3">نماذج الإجراءات السلوكية:</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+                    ${createGeneralFormCard('iltizam_madrasi', 'عقد التزام مدرسي', 'يوقع بداية العام أو عند العودة', 'text-indigo-600')}
+                    ${createGeneralFormCard('tawid_darajat', 'فرص تعويض', 'لتحسين الدرجات المحسومة', 'text-indigo-600')}
+                    ${createGeneralFormCard('rasd_tamayuz', 'رصد سلوك متميز', 'سجل الطالب للإنجازات', 'text-green-600')}
+                    ${createGeneralFormCard('dawat_wali_amr', 'دعوة ولي أمر', 'طلب حضور للمدرسة', 'text-gray-800')}
+                    ${createGeneralFormCard('rasd_slooki', 'سجل مخالفات (للملف)', 'يوضع في ملف الطالب', 'text-gray-800')}
+                    ${createGeneralFormCard('khota_tadeel', 'خطة تعديل سلوك', 'للموجه الطلابي', 'text-teal-600')}
+                </div>
+
+                <!-- 3. النماذج الميدانية (تطبع فارغة) -->
+                <h3 class="font-bold text-gray-700 mb-3">نماذج فارغة للتوزيع (للمعلمين):</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+                    ${createGeneralFormCard('rasd_moalem', 'سجل متابعة معلم', 'نموذج فارغ يوزع على المعلمين', 'text-purple-600')}
+                </div>
+
+                <!-- 4. النماذج السرية والطارئة -->
+                <h3 class="font-bold text-gray-700 mb-3">النماذج السرية والطارئة:</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    ${createGeneralFormCard('eblagh_etha', 'إبلاغ عن إيذاء', 'خاص بمركز البلاغات 1919', 'text-red-600')}
+                    ${createGeneralFormCard('high_risk', 'حالة عالية الخطورة', 'للحالات الطارئة جداً', 'text-red-600')}
+                </div>
+            </div>
+        `;
+        
+        const select = document.getElementById('gf-grade');
+        const grades = [...new Set(APP_DATA.students.filter(s => s['المرحلة'] === currentStage).map(s => s['الصف']))].sort();
+        grades.forEach(g => select.add(new Option(g, g)));
+    }
+
+    function createGeneralFormCard(formId, title, desc, colorClass = 'text-gray-800') {
+        return `<div class="form-card bg-white p-5 rounded-xl cursor-pointer border hover:border-indigo-300 transition-all" onclick="printGeneralForm('${formId}')">
+                <div class="flex items-center gap-3 mb-2">
+                    <div class="p-2 bg-gray-50 rounded-full"><span class="material-symbols-outlined ${colorClass}">description</span></div>
+                    <h3 class="font-bold ${colorClass}">${title}</h3>
+                </div>
+                <p class="text-sm text-gray-500">${desc}</p>
+            </div>`;
+    }
+
+    // =================================================================
+    // 2. دوال التفاعل (Interactivity)
+    // =================================================================
+    function gfPopulateClasses() {
+        const grade = document.getElementById('gf-grade').value;
+        const select = document.getElementById('gf-class');
+        select.disabled = !grade; select.innerHTML = '<option value="">اختر</option>';
+        if(grade) {
+            const classes = [...new Set(APP_DATA.students.filter(s => s['المرحلة'] === currentStage && s['الصف'] === grade).map(s => s['الفصل']))].sort();
+            classes.forEach(c => select.add(new Option(c, c)));
+        }
+    }
+
+    function gfPopulateStudents() {
+        const grade = document.getElementById('gf-grade').value;
+        const cls = document.getElementById('gf-class').value;
+        const select = document.getElementById('gf-student');
+        select.disabled = !cls; select.innerHTML = '<option value="">اختر الطالب</option>';
+        if(cls) {
+            const students = APP_DATA.students.filter(s => s['المرحلة'] === currentStage && s['الصف'] === grade && s['الفصل'] == cls);
+            students.forEach(s => select.add(new Option(s['اسم الطالب'], s['اسم الطالب'])));
+        }
+    }
+
+  // =================================================================
+    // 3. أمر الطباعة (محدث لدعم جلب السجل)
+    // =================================================================
+    function printGeneralForm(formId) {
+        const studentName = document.getElementById('gf-student').value;
+        const blankForms = ['rasd_moalem']; 
+
+        if (!blankForms.includes(formId) && !studentName) { 
+            showEnhancedToast('danger', 'يرجى اختيار الطالب أولاً لطباعة هذا النموذج'); 
+            return; 
+        }
+        
+        // البيانات الأساسية
+        let printData = { 
+            studentName: studentName || '', 
+            grade: document.getElementById('gf-grade').value || '', 
+            class: document.getElementById('gf-class').value || '', 
+            violationDate: new Date().toLocaleDateString('ar-SA-u-ca-islamic') 
+        };
+
+        // إضافة اسم الوكيل
+        if (APP_DATA.settings && APP_DATA.settings.deputies && APP_DATA.settings.deputies.length > 0) {
+            printData.deputyName = APP_DATA.settings.deputies[0].name;
+        }
+
+        // --- معالجة خاصة للنموذج رقم 9 (جلب السجل) ---
+        if (formId === 'rasd_slooki' && studentName) {
+            showEnhancedToast('info', 'جاري جلب سجل مخالفات الطالب...');
+            
+            // استدعاء السيرفر لجلب المخالفات
+            google.script.run.withSuccessHandler(records => {
+                // البحث عن الطالب في القائمة الحالية للحصول على رقمه (الأدق للفلترة)
+                const studentObj = APP_DATA.students.find(s => s['اسم الطالب'] === studentName);
+                const studentId = studentObj ? studentObj['رقم الطالب'] : null;
+
+                // فلترة مخالفات هذا الطالب فقط
+                const studentViolations = records.filter(r => 
+                    r['اسم الطالب'] === studentName || (studentId && String(r['رقم الطالب']) === String(studentId))
+                );
+
+                // إضافة المخالفات لحزمة الطباعة
+                printData.violationsList = studentViolations;
+
+                // تنفيذ الطباعة
+                printFormDirectly(formId, encodeURIComponent(JSON.stringify(printData)));
+
+            }).getCachedViolationRecords(currentStage); // دالة موجودة في Server_Actions
+            
+            return; // توقف هنا وانتظر رد السيرفر
+        }
+
+        // الطباعة العادية لباقي النماذج
+        printFormDirectly(formId, encodeURIComponent(JSON.stringify(printData)));
+    }
+    
+</script>

@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>نظام الملف الشامل للطالب</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+    
+    <?!= include('CSS_Styles'); ?>
+</head>
+<body class="h-screen flex overflow-hidden">
+
+    <div id="toast-notification" class="fixed top-5 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white px-6 py-3 rounded-lg shadow-lg z-50 opacity-0 invisible transition-all duration-500 no-print"></div>
+
+    <aside class="w-64 bg-white border-l border-gray-200 flex flex-col shadow-lg z-10 no-print">
+        <div class="h-16 flex items-center px-6 border-b border-gray-200 bg-gradient-to-l from-purple-50 to-indigo-50">
+            <div class="flex items-center gap-3">
+                <span class="material-symbols-outlined text-indigo-600 text-3xl">school</span>
+                <h1 class="text-lg font-bold text-gray-800">نظام التوجيه</h1>
+            </div>
+        </div>
+        
+        <nav class="flex-1 p-4 space-y-1 overflow-y-auto">
+            <div class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2 mt-2 px-2">السلوك والمخالفات</div>
+            <a href="#" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-gray-700 hover:bg-gray-50 transition-all" data-section="new-violation"><span class="material-symbols-outlined text-indigo-500">add_circle</span><span>تسجيل مخالفة</span></a>
+            <a href="#" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-gray-700 hover:bg-gray-50 transition-all" data-section="violations-history"><span class="material-symbols-outlined text-purple-500">history</span><span>سجل السلوك</span></a>
+            <a href="#" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-gray-700 hover:bg-gray-50 transition-all" data-section="reports"><span class="material-symbols-outlined text-pink-500">bar_chart</span><span>تحليل السلوك</span></a>
+
+            <div class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2 mt-6 px-2">المواظبة والغياب</div>
+            <a href="#" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-gray-700 hover:bg-gray-50 transition-all" data-section="absence"><span class="material-symbols-outlined text-red-500">calendar_month</span><span>متابعة الغياب</span></a>
+
+            <div class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2 mt-6 px-2">الشؤون التعليمية</div>
+            <a href="#" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-gray-700 hover:bg-gray-50 opacity-50 cursor-not-allowed">
+                <span class="material-symbols-outlined text-emerald-600">analytics</span>
+                <span>التحصيل الدراسي (قريباً)</span>
+            </a>
+            <a href="#" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-gray-700 hover:bg-gray-50 transition-all" data-section="whatsapp">
+    <span class="material-symbols-outlined text-green-500">chat</span>
+    <span>أدوات واتساب</span>
+</a>
+            <div class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2 mt-6 px-2">الخدمات العامة</div>
+            <a href="#" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-gray-700 hover:bg-gray-50 transition-all" data-section="general-forms"><span class="material-symbols-outlined text-orange-500">folder_open</span><span>النماذج العامة</span></a>
+            <div class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2 mt-6 px-2">النظام</div>
+            <a href="#" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-gray-700 hover:bg-gray-50 transition-all" data-section="settings">
+                <span class="material-symbols-outlined text-slate-500">settings</span>
+                <span>الإعدادات</span>
+            </a>
+        </nav>
+    </aside>
+
+    <div class="flex-1 flex flex-col h-screen overflow-hidden">
+        <header class="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6 shadow-sm z-10 no-print">
+            <div class="flex items-center gap-4">
+                <select id="stage-selector" class="px-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500"><option value="متوسط">المرحلة المتوسطة</option><option value="ثانوي">المرحلة الثانوية</option></select>
+            </div>
+            <button id="refreshBtn" class="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 text-sm font-medium"><span class="material-symbols-outlined">refresh</span> تحديث</button>
+        </header>
+
+        <main id="main-content" class="flex-1 overflow-y-auto p-6 bg-gray-50 relative no-print">
+            <div class="flex justify-center items-center h-full"><div class="text-center"><div class="loading-bar mx-auto"><div class="loading-bar-progress"></div></div><p class="text-gray-500 mt-4 text-sm">جاري تحميل النظام...</p></div></div>
+        </main>
+    </div>
+
+    <div id="print-container"></div>
+
+    <?!= include('JS_Core'); ?>
+    <?!= include('JS_Violations'); ?>
+    <?!= include('JS_History'); ?>
+    <?!= include('JS_Reports'); ?>
+    <?!= include('JS_GeneralForms'); ?>
+    <?!= include('JS_Absence'); ?>
+    <?!= include('JS_Print'); ?>
+    <?!= include('JS_WhatsApp'); ?>
+    <?!= include('JS_Settings'); ?>
+</body>
+</html>

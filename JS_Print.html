@@ -1,0 +1,85 @@
+<script>
+    // =================================================================
+    // محرك الطباعة المركزي (المطور)
+    // =================================================================
+
+    // دالة 1: طباعة السياق الحالي (من صفحة المخالفات فقط)
+    function printCurrentContext(formId) {
+        const studentSelect = document.getElementById('nv-student');
+        const violationSelect = document.getElementById('nv-text');
+        const degreeSelect = document.getElementById('nv-degree');
+        
+        // هذه الشروط خاصة فقط بطباعة المخالفات الحالية
+        if (!studentSelect.value) { showEnhancedToast('danger', 'يرجى اختيار الطالب أولاً'); return; }
+        if (!violationSelect.value) { showEnhancedToast('danger', 'يرجى اختيار المخالفة أولاً'); return; }
+
+        const procedures = [];
+        document.querySelectorAll('#procedures-list input:checked').forEach(cb => procedures.push(cb.value));
+
+        let degreeClean = degreeSelect.value;
+        if (degreeClean.includes(' ')) degreeClean = degreeClean.split(' ')[1];
+
+        const data = {
+            studentName: studentSelect.options[studentSelect.selectedIndex].text,
+            grade: document.getElementById('nv-grade').value,
+            class: document.getElementById('nv-class').value,
+            violationDate: new Date().toLocaleDateString('ar-SA-u-ca-islamic'),
+            violationDay: getDayFromDate(new Date()),
+            violationDegree: degreeClean,
+            violationText: violationSelect.options[violationSelect.selectedIndex].text,
+            procedures: procedures,
+            // جلب بيانات الإعدادات بأمان
+            managerName: (APP_DATA.settings && APP_DATA.settings.manager) ? APP_DATA.settings.manager : '',
+            committeeMembers: (APP_DATA.settings && APP_DATA.settings.committee) ? APP_DATA.settings.committee : []
+        };
+
+        printFormDirectly(formId, encodeURIComponent(JSON.stringify(data)));
+    }
+
+    // دالة 2: الطباعة المباشرة (تستخدم من كل مكان)
+    function printFormDirectly(formId, dataEncoded) {
+        const printData = JSON.parse(decodeURIComponent(dataEncoded));
+        
+        // محاولة تعبئة المدير واللجنة إذا كانت ناقصة (مفيد عند الطباعة من السجلات القديمة)
+        if (!printData.managerName && APP_DATA.settings) {
+            printData.managerName = APP_DATA.settings.manager;
+            printData.committeeMembers = APP_DATA.settings.committee;
+        }
+
+        showEnhancedToast('info', 'جاري تحضير النموذج...');
+
+        google.script.run.withSuccessHandler(function(templateContent) {
+            if (!templateContent || templateContent.length < 10) {
+                showEnhancedToast('danger', 'خطأ: ملف القوالب (PrintTemplates) فارغ أو غير موجود!');
+                return;
+            }
+
+            const printWindow = window.open('', '_blank');
+            if (!printWindow) { 
+                showEnhancedToast('danger', 'تم حظر النافذة! اسمح بالنوافذ المنبثقة (Pop-ups) لهذا الموقع.'); 
+                return; 
+            }
+
+            printWindow.document.open();
+            printWindow.document.write(templateContent);
+            printWindow.document.close();
+
+            // محاولة التعبئة مع تأخير لضمان تحميل الصفحة
+            setTimeout(function() {
+                if (printWindow.fillForm) {
+                    printWindow.fillForm(formId, printData);
+                } else {
+                    setTimeout(() => {
+                        if (printWindow.fillForm) {
+                            printWindow.fillForm(formId, printData);
+                        } else {
+                            console.error('Error: fillForm function not found.');
+                            printWindow.alert('حدث خطأ في تحميل كود النموذج. يرجى المحاولة مرة أخرى.');
+                        }
+                    }, 500);
+                }
+            }, 300);
+
+        }).getPrintTemplateContent();
+    }
+</script>

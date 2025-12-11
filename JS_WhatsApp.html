@@ -1,0 +1,201 @@
+<script>
+    // =================================================================
+    // صفحة أدوات واتساب - (WhatsApp Tools Page) - النسخة المُصلحة
+    // =================================================================
+    
+    let wa_isConnected = false;
+    let wa_pollInterval = null;
+    let wa_keepAliveInterval = null;
+    let wa_checkAttempts = 0; // ✅ عداد المحاولات الجديد
+
+    function renderWhatsAppPage() {
+        const main = document.getElementById('main-content');
+        main.innerHTML = `
+            <div class="max-w-5xl mx-auto">
+                <div class="flex items-center gap-3 mb-8">
+                    <div class="p-3 bg-green-100 rounded-2xl text-green-600"><span class="material-symbols-outlined text-4xl">chat</span></div>
+                    <div><h2 class="text-2xl font-bold text-gray-800">أدوات واتساب</h2><p class="text-sm text-gray-500">ربط النظام لإرسال الإشعارات تلقائياً</p></div>
+                </div>
+
+                <div id="wa-status-card" class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden mb-8">
+                    <div class="p-8 flex flex-col items-center justify-center text-center">
+                        <div id="status-disconnected" class="block">
+                            <div class="w-20 h-20 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4 animate-pulse"><span class="material-symbols-outlined text-4xl text-red-500">link_off</span></div>
+                            <h3 class="text-xl font-bold text-gray-800 mb-2">الاتصال مغلق</h3>
+                            <button onclick="openWhatsAppModal()" class="px-8 py-3 bg-green-600 text-white rounded-xl font-bold hover:bg-green-700 shadow-lg shadow-green-200 transition-all flex items-center gap-2 mx-auto"><span class="material-symbols-outlined">qr_code_scanner</span> تشغيل الاتصال</button>
+                        </div>
+
+                        <div id="status-connected" class="hidden">
+                            <div class="w-20 h-20 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-4"><span class="material-symbols-outlined text-4xl text-green-600">check_circle</span></div>
+                            <h3 class="text-xl font-bold text-gray-800 mb-1">متصل بنجاح!</h3>
+                            <p class="text-green-600 font-bold dir-ltr mb-6" id="wa-phone-number">...</p>
+                            <div class="flex gap-3 justify-center">
+                                <button onclick="testMessage()" class="px-6 py-2 bg-gray-100 text-gray-700 rounded-lg font-bold">تجربة إرسال</button>
+                                <button onclick="disconnectWhatsApp()" class="px-6 py-2 bg-red-50 text-red-600 rounded-lg font-bold">إنهاء الاتصال</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-gray-50 p-4 border-t border-gray-100 flex justify-between items-center text-xs text-gray-400">
+                        <span>الحالة: <span id="wa-text-status" class="font-bold text-red-500">غير متصل</span></span>
+                        <span>آخر تحديث: <span id="wa-last-update">-</span></span>
+                    </div>
+                </div>
+            </div>
+
+            <div id="wa-modal" class="fixed inset-0 bg-gray-900/80 backdrop-blur-sm z-50 hidden flex items-center justify-center">
+                <div class="bg-white rounded-2xl shadow-2xl w-full max-w-4xl overflow-hidden flex flex-col md:flex-row h-[500px]">
+                    <div class="w-full md:w-1/2 p-8 bg-gray-50 border-l border-gray-200 flex flex-col justify-center">
+                        <h3 class="text-xl font-bold text-gray-800 mb-4">تعليمات الربط:</h3>
+                        <ol class="list-decimal list-inside space-y-3 text-gray-600 text-sm font-bold">
+                            <li>افتح واتساب في جوالك.</li>
+                            <li>اذهب للإعدادات > الأجهزة المرتبطة.</li>
+                            <li>اضغط "ربط جهاز".</li>
+                            <li>امسح الباركود الذي سيظهر في اليسار.</li>
+                            <li class="text-green-600">⏳ انتظر 10-15 ثانية بعد المسح</li>
+                        </ol>
+                    </div>
+                    <div class="w-full md:w-1/2 p-8 flex flex-col items-center justify-center bg-white relative">
+                        <button onclick="closeWhatsAppModal()" class="absolute top-4 left-4 text-gray-400 hover:text-gray-600"><span class="material-symbols-outlined text-2xl">close</span></button>
+                        
+                        <div id="qr-wrapper" class="relative flex items-center justify-center w-64 h-64 bg-gray-100 rounded-xl border-2 border-dashed border-gray-300">
+                            <div id="qr-loading" class="flex flex-col items-center">
+                                <div class="w-10 h-10 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mb-3"></div>
+                                <span class="text-xs font-bold text-indigo-600">جاري جلب الباركود...</span>
+                            </div>
+                            <img id="qr-image" class="hidden w-full h-full object-contain rounded-lg" src="" alt="QR Code" style="display: none;">
+                        </div>
+                        <p class="mt-4 text-xs text-gray-400" id="qr-status-text">يتم التحديث تلقائياً</p>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        startKeepAlive();
+        checkWhatsAppStatus();
+    }
+
+    function checkWhatsAppStatus() {
+        const statusText = document.getElementById('wa-text-status');
+        if(statusText) statusText.innerText = 'جاري الاتصال...';
+
+        google.script.run.withSuccessHandler((res) => {
+            const now = new Date();
+            if(document.getElementById('wa-last-update')) {
+                document.getElementById('wa-last-update').innerText = now.toLocaleTimeString('ar-SA');
+            }
+
+            if (res.error) {
+                if(statusText) {
+                    statusText.innerText = 'السيرفر يصحو...';
+                    statusText.className = 'font-bold text-orange-500';
+                }
+                return;
+            }
+
+            if (res.connected) {
+                wa_isConnected = true;
+                wa_checkAttempts = 0; // ✅ إعادة تصفير العداد
+                
+                document.getElementById('status-disconnected').classList.add('hidden');
+                document.getElementById('status-connected').classList.remove('hidden');
+                if(statusText) {
+                    statusText.innerText = 'متصل ✅';
+                    statusText.className = 'font-bold text-green-600';
+                }
+                if(res.phone) document.getElementById('wa-phone-number').innerText = res.phone;
+                closeWhatsAppModal();
+            } else {
+                wa_isConnected = false;
+                document.getElementById('status-disconnected').classList.remove('hidden');
+                document.getElementById('status-connected').classList.add('hidden');
+                if(statusText) {
+                    statusText.innerText = 'بانتظار المسح 📷';
+                    statusText.className = 'font-bold text-blue-500';
+                }
+
+                // ✅ التعديل الرئيسي: عرض الصورة فقط إذا كانت النافذة مفتوحة
+                const modal = document.getElementById('wa-modal');
+                if (!modal.classList.contains('hidden') && res.qr) {
+                    wa_checkAttempts++; // ✅ زيادة العداد
+                    
+                    const qrImg = document.getElementById('qr-image');
+                    const loader = document.getElementById('qr-loading');
+                    const wrapper = document.getElementById('qr-wrapper');
+                    const statusTextModal = document.getElementById('qr-status-text');
+
+                    if(qrImg && qrImg.src !== res.qr) { // ✅ تحديث فقط إذا تغير الباركود
+                        qrImg.src = res.qr;
+                        qrImg.classList.remove('hidden');
+                        qrImg.style.display = 'block';
+                        
+                        if(wrapper) {
+                            wrapper.classList.remove('bg-gray-100', 'border-dashed');
+                            wrapper.classList.add('bg-white', 'border-solid');
+                        }
+                    }
+                    
+                    if(loader) {
+                        loader.classList.add('hidden');
+                        loader.style.display = 'none';
+                    }
+
+                    // ✅ إظهار عدد المحاولات
+                    if(statusTextModal) {
+                        if(wa_checkAttempts > 2) {
+                            statusTextModal.innerText = `محاولة ${wa_checkAttempts} - امسح الباركود الآن`;
+                            statusTextModal.className = 'mt-4 text-sm text-orange-600 font-bold animate-pulse';
+                        } else {
+                            statusTextModal.innerText = 'امسح الباركود من جوالك';
+                            statusTextModal.className = 'mt-4 text-xs text-gray-600';
+                        }
+                    }
+                }
+            }
+        }).getWhatsAppStatus();
+    }
+
+    function startKeepAlive() {
+        google.script.run.pingWhatsAppServer();
+        if (wa_keepAliveInterval) clearInterval(wa_keepAliveInterval);
+        wa_keepAliveInterval = setInterval(() => {
+            google.script.run.pingWhatsAppServer();
+            checkWhatsAppStatus();
+        }, 30000);
+    }
+
+    function openWhatsAppModal() {
+        wa_checkAttempts = 0; // ✅ إعادة تصفير العداد عند فتح النافذة
+        document.getElementById('wa-modal').classList.remove('hidden');
+        
+        // ✅ فحص فوري عند الفتح
+        checkWhatsAppStatus();
+        
+        if (wa_pollInterval) clearInterval(wa_pollInterval);
+        
+        // ✅ التعديل الأهم: زيادة الفترة من 5 ثواني إلى 10 ثواني
+        wa_pollInterval = setInterval(checkWhatsAppStatus, 10000);
+    }
+
+    function closeWhatsAppModal() {
+        document.getElementById('wa-modal').classList.add('hidden');
+        wa_checkAttempts = 0; // ✅ إعادة تصفير العداد
+        if (wa_pollInterval) clearInterval(wa_pollInterval);
+    }
+
+    function disconnectWhatsApp() {
+        if(confirm('هل تريد قطع الاتصال؟')) {
+            wa_checkAttempts = 0;
+            renderWhatsAppPage();
+        }
+    }
+
+    function testMessage() {
+        const phone = prompt("أدخل رقم جوال للتجربة (مثال: 0512345678):");
+        if(phone) {
+            google.script.run.withSuccessHandler(res => {
+                if(res.success) alert("تم الإرسال! 🚀");
+                else alert("خطأ: " + res.error);
+            }).sendWhatsAppMessage(phone, "✅ تجربة من نظام التوجيه الطلابي");
+        }
+    }
+</script>

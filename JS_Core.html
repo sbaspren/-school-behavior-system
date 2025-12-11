@@ -1,0 +1,128 @@
+<script>
+    // =================================================================
+    // 1. المتغيرات العامة (Global Variables)
+    // =================================================================
+    let APP_DATA = { students: [], violations: [], procedures: {}, settings: { manager: '', deputies: [], counselors: [], committee: [] } };
+    let currentStage = 'متوسط';
+    let currentRecords = [];
+    let chartInstances = {};
+    
+    // =================================================================
+    // 2. تهيئة النظام (Initialization)
+    // =================================================================
+    document.addEventListener('DOMContentLoaded', function() {
+        google.script.run.withSuccessHandler(onDataReceived).getInitialData();
+        setupNavigation();
+    });
+
+    function onDataReceived(data) {
+        if (data.success) {
+            APP_DATA = data;
+            // الافتراضي: فتح صفحة تسجيل مخالفة
+            switchSection('new-violation');
+        } else {
+            showEnhancedToast('danger', 'فشل تحميل البيانات: ' + data.error);
+        }
+    }
+
+    // =================================================================
+    // 3. نظام التنقل (Navigation System)
+    // =================================================================
+    function setupNavigation() {
+        // تفعيل أزرار القائمة الجانبية
+        document.querySelectorAll('.nav-item[data-section]').forEach(item => {
+            item.addEventListener('click', (e) => {
+                e.preventDefault();
+                document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+                item.classList.add('active');
+                switchSection(item.dataset.section);
+            });
+        });
+
+        // تفعيل تغيير المرحلة (متوسط/ثانوي)
+        document.getElementById('stage-selector').addEventListener('change', (e) => {
+            currentStage = e.target.value;
+            const active = document.querySelector('.nav-item.active')?.dataset.section;
+            if(active) switchSection(active);
+        });
+
+        // زر التحديث
+        document.getElementById('refreshBtn').addEventListener('click', () => {
+            google.script.run.withSuccessHandler(onDataReceived).getInitialData();
+        });
+    }
+
+    function switchSection(sectionId) {
+        // تنظيف الرسوم البيانية السابقة (إن وجدت) لتخفيف الذاكرة
+        Object.values(chartInstances).forEach(c => c.destroy());
+        chartInstances = {};
+        
+        // التوجيه للدالة المناسبة حسب القسم
+        if (sectionId === 'new-violation') renderNewViolationPage();
+        else if (sectionId === 'violations-history') renderHistoryPage();
+        // ... الكود السابق
+else if (sectionId === 'general-forms') renderGeneralFormsPage();
+else if (sectionId === 'whatsapp') renderWhatsAppPage(); // <--- أضف هذا السطر
+// ... باقي الكود
+        else if (sectionId === 'reports') renderReportsPage();
+        else if (sectionId === 'general-forms') renderGeneralFormsPage();
+        else if (sectionId === 'absence') renderAbsencePage(); // <-- تأكد من وجود هذا السطر
+        else if (sectionId === 'settings') renderSettingsPage();
+    }
+
+    // =================================================================
+    // 4. دوال مساعدة عامة (Utilities)
+    // =================================================================
+    
+    // إظهار التنبيهات (Toast)
+    function showEnhancedToast(type, message) {
+        const toast = document.getElementById('toast-notification');
+        const colors = { success: 'bg-green-600', danger: 'bg-red-600', info: 'bg-blue-600' };
+        
+        toast.className = `fixed top-5 left-1/2 transform -translate-x-1/2 text-white px-6 py-3 rounded-lg shadow-lg z-50 transition-all duration-300 ${colors[type]}`;
+        toast.innerHTML = message;
+        
+        // إظهار
+        toast.classList.remove('opacity-0', 'invisible');
+        
+        // إخفاء تلقائي بعد 3 ثواني
+        setTimeout(() => toast.classList.add('opacity-0', 'invisible'), 3000);
+    }
+
+    // تحويل الأرقام إلى أرقام هندية (١٢٣)
+    function toIndic(n) {
+        if(n==null) return ''; 
+        return n.toString().replace(/\d/g, d => "٠١٢٣٤٥٦٧٨٩"[d]);
+    }
+
+    // استخراج اسم اليوم من التاريخ
+    function getDayFromDate(dateVal) {
+        const days = ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+        const d = new Date(dateVal);
+        return days[d.getDay()] || '';
+    }
+
+// الحصول على معرف النموذج من اسمه العربي
+    function getFormIdByName(name) {
+        // تنظيف الاسم من المسافات الزائدة لضمان المطابقة
+        const cleanName = name ? name.trim() : '';
+        
+        const map = { 
+            'إشعار ولي الأمر': 'ishar_wali_amr', 
+            'اشعار ولي الامر': 'ishar_wali_amr', // احتمال بدون همزات
+            
+            'تعهد سلوكي': 'tahood_slooki', 
+            
+            'إحالة طالب': 'ehalat_talib', 
+            'احالة طالب': 'ehalat_talib',
+            
+            'دعوة ولي أمر': 'dawat_wali_amr', 
+            'دعوة ولي الأمر': 'dawat_wali_amr', 
+            
+            'محضر ضبط واقعة': 'mahdar_dab_wakea', 
+            'محضر اجتماع لجنة': 'mahdar_lajnah', 
+            'فرص تعويض': 'tawid_darajat' 
+        };
+        return map[cleanName];
+    }
+</script>

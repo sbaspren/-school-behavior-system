@@ -1,0 +1,287 @@
+<script>
+    // =================================================================
+    // صفحة الإعدادات - إدارة البيانات (نسخة محسنة مع مؤشر التحميل)
+    // =================================================================
+
+    let settings_allStudents = []; // لتخزين الطلاب وعمل البحث السريع
+
+    function renderSettingsPage() {
+        const main = document.getElementById('main-content');
+        main.innerHTML = `
+            <div class="max-w-6xl mx-auto">
+                <div class="flex items-center gap-3 mb-6">
+                    <div class="p-3 bg-slate-100 rounded-2xl text-slate-600">
+                        <span class="material-symbols-outlined text-4xl">settings</span>
+                    </div>
+                    <div>
+                        <h2 class="text-2xl font-bold text-gray-800">إعدادات النظام</h2>
+                        <p class="text-sm text-gray-500">المرحلة الحالية: <span class="text-indigo-600 font-bold">${currentStage}</span></p>
+                    </div>
+                </div>
+
+                <div class="flex border-b border-gray-200 mb-6 overflow-x-auto">
+                    <button class="px-6 py-3 text-gray-500 hover:text-gray-700 font-medium text-sm cursor-not-allowed opacity-50 whitespace-nowrap">بيانات المدرسة</button>
+                    <button class="px-6 py-3 text-gray-500 hover:text-gray-700 font-medium text-sm cursor-not-allowed opacity-50 whitespace-nowrap">لجنة التوجيه</button>
+                    <button class="px-6 py-3 text-gray-500 hover:text-gray-700 font-medium text-sm cursor-not-allowed opacity-50 whitespace-nowrap">بيانات المعلمين</button>
+                    <button class="px-6 py-3 text-indigo-600 border-b-2 border-indigo-600 font-bold text-sm whitespace-nowrap">بيانات الطلاب</button>
+                </div>
+
+                <div id="settings-students-content" class="space-y-6">
+                    
+                    <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200 flex flex-wrap gap-4 justify-between items-center">
+                        <div class="flex gap-2 items-center">
+                            <div class="relative">
+                                <span class="material-symbols-outlined absolute right-3 top-2.5 text-gray-400">search</span>
+                                <input type="text" id="setting-search" onkeyup="filterSettingsTable()" placeholder="بحث بالاسم أو الهوية..." class="pr-10 pl-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 w-64">
+                            </div>
+                            <span class="text-xs text-gray-500 font-bold" id="setting-count">0 طالب</span>
+                        </div>
+
+                        <div class="flex gap-2">
+                            <button onclick="openAddStudentModal()" class="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-bold text-sm transition-all">
+                                <span class="material-symbols-outlined">person_add</span> إضافة طالب
+                            </button>
+                            
+                            <button id="btn-upload-excel" onclick="document.getElementById('excel-upload').click()" class="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 font-bold text-sm transition-all shadow-sm border border-emerald-500">
+                                <span class="material-symbols-outlined">upload_file</span> استيراد (Excel)
+                            </button>
+                            <input type="file" id="excel-upload" accept=".xls,.xlsx" class="hidden" onchange="processExcelFile(this)">
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                        <div class="overflow-x-auto max-h-[500px]">
+                            <table class="min-w-full divide-y divide-gray-200">
+                                <thead class="bg-gray-50 sticky top-0">
+                                    <tr>
+                                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">اسم الطالب</th>
+                                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">الهوية (رقم الطالب)</th>
+                                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">الصف / الفصل</th>
+                                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">الجوال</th>
+                                        <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">إجراءات</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="settings-students-table" class="bg-white divide-y divide-gray-200">
+                                    <tr><td colspan="5" class="px-6 py-10 text-center text-gray-500">جاري تحميل البيانات...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="add-student-modal" class="fixed inset-0 bg-gray-900/50 hidden z-50 flex items-center justify-center backdrop-blur-sm">
+                <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg p-6 transform transition-all">
+                    <div class="flex justify-between items-center mb-4 border-b pb-2">
+                        <h3 class="text-lg font-bold text-gray-800">إضافة طالب جديد</h3>
+                        <button onclick="closeAddStudentModal()" class="text-gray-400 hover:text-gray-600"><span class="material-symbols-outlined">close</span></button>
+                    </div>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-1">اسم الطالب</label>
+                            <input type="text" id="new-name" class="w-full border-gray-300 rounded-lg focus:ring-indigo-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-1">رقم الهوية (رقم الطالب)</label>
+                            <input type="text" id="new-id" class="w-full border-gray-300 rounded-lg focus:ring-indigo-500">
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-bold text-gray-700 mb-1">الصف</label>
+                                <select id="new-grade" class="w-full border-gray-300 rounded-lg focus:ring-indigo-500">
+                                    <option value="">اختر الصف</option>
+                                    <option value="أول متوسط">أول متوسط</option>
+                                    <option value="ثاني متوسط">ثاني متوسط</option>
+                                    <option value="ثالث متوسط">ثالث متوسط</option>
+                                    <option value="أول ثانوي">أول ثانوي</option>
+                                    <option value="ثاني ثانوي">ثاني ثانوي</option>
+                                    <option value="ثالث ثانوي">ثالث ثانوي</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-bold text-gray-700 mb-1">الفصل</label>
+                                <select id="new-class" class="w-full border-gray-300 rounded-lg focus:ring-indigo-500">
+                                    <option value="أ">أ</option><option value="ب">ب</option><option value="ج">ج</option>
+                                    <option value="د">د</option><option value="هـ">هـ</option><option value="و">و</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-1">رقم الجوال (اختياري)</label>
+                            <input type="text" id="new-mobile" placeholder="9665xxxxxxxx" class="w-full border-gray-300 rounded-lg focus:ring-indigo-500">
+                        </div>
+                    </div>
+
+                    <div class="mt-6 flex justify-end gap-3">
+                        <button onclick="closeAddStudentModal()" class="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg font-bold">إلغاء</button>
+                        <button onclick="submitNewStudent()" class="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-bold">حفظ</button>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        loadSettingsStudents();
+    }
+
+    // ==========================================
+    // 1. تحميل وعرض البيانات
+    // ==========================================
+    function loadSettingsStudents() {
+        if(APP_DATA.students) {
+            settings_allStudents = APP_DATA.students.filter(s => s['المرحلة'] === currentStage);
+            renderSettingsTable(settings_allStudents);
+        }
+    }
+
+    function renderSettingsTable(data) {
+        const tbody = document.getElementById('settings-students-table');
+        document.getElementById('setting-count').innerText = data.length + ' طالب';
+        
+        if(data.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="5" class="px-6 py-10 text-center text-gray-400">لا يوجد طلاب في هذه المرحلة. قم برفع ملف الإكسل.</td></tr>';
+            return;
+        }
+
+        let html = '';
+        data.forEach(s => {
+            html += `
+                <tr class="hover:bg-gray-50 group">
+                    <td class="px-6 py-3 text-sm font-bold text-gray-900">${s['اسم الطالب']}</td>
+                    <td class="px-6 py-3 text-sm text-gray-500 font-mono">${s['رقم الطالب']}</td>
+                    <td class="px-6 py-3 text-sm text-gray-600">${s['الصف']} - ${s['الفصل']}</td>
+                    <td class="px-6 py-3 text-sm text-gray-500" dir="ltr">${s['رقم الجوال'] || '-'}</td>
+                    <td class="px-6 py-3 text-center">
+                        <button onclick="deleteStudent('${s['رقم الطالب']}', '${s['اسم الطالب']}')" class="text-red-400 hover:text-red-600 opacity-0 group-hover:opacity-100 transition-all" title="حذف الطالب">
+                            <span class="material-symbols-outlined">delete</span>
+                        </button>
+                    </td>
+                </tr>
+            `;
+        });
+        tbody.innerHTML = html;
+    }
+
+    function filterSettingsTable() {
+        const query = document.getElementById('setting-search').value.toLowerCase();
+        const filtered = settings_allStudents.filter(s => 
+            s['اسم الطالب'].toLowerCase().includes(query) || 
+            String(s['رقم الطالب']).includes(query)
+        );
+        renderSettingsTable(filtered);
+    }
+
+    // ==========================================
+    // 2. معالجة ملف الإكسل (الاستيراد) - محدثة
+    // ==========================================
+    function processExcelFile(input) {
+        if (!input.files || !input.files[0]) return;
+        
+        const file = input.files[0];
+        
+        // --- تحسين تجربة المستخدم: تغيير حالة الزر ---
+        const btn = document.getElementById('btn-upload-excel');
+        const originalBtnText = btn.innerHTML;
+        
+        // تعطيل الزر وإظهار مؤشر التحميل
+        btn.disabled = true;
+        btn.classList.add('opacity-75', 'cursor-not-allowed');
+        btn.innerHTML = '<div class="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div> جاري المعالجة...';
+        
+        showEnhancedToast('info', 'جاري قراءة الملف وتحليله... قد يستغرق ذلك بضع ثوانٍ');
+        
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const content = e.target.result.split(',')[1];
+            
+            google.script.run.withSuccessHandler(response => {
+                // إعادة الزر لحالته الطبيعية
+                input.value = ''; 
+                btn.disabled = false;
+                btn.classList.remove('opacity-75', 'cursor-not-allowed');
+                btn.innerHTML = originalBtnText;
+
+                if (response.success) {
+                    showEnhancedToast('success', response.message);
+                    // تحديث البيانات بالكامل
+                    google.script.run.withSuccessHandler(data => {
+                        APP_DATA = data;
+                        loadSettingsStudents();
+                    }).getInitialData();
+                } else {
+                    showEnhancedToast('danger', 'خطأ: ' + response.error);
+                }
+            }).withFailureHandler(err => {
+                // إعادة الزر لحالته الطبيعية عند الخطأ
+                input.value = '';
+                btn.disabled = false;
+                btn.classList.remove('opacity-75', 'cursor-not-allowed');
+                btn.innerHTML = originalBtnText;
+                showEnhancedToast('danger', 'فشل الاتصال بالخادم: ' + err);
+            }).processUploadedStudentFile(content, file.name);
+        };
+        reader.readAsDataURL(file);
+    }
+
+    // ==========================================
+    // 3. الإضافة والحذف اليدوي
+    // ==========================================
+    function openAddStudentModal() {
+        document.getElementById('add-student-modal').classList.remove('hidden');
+    }
+    
+    function closeAddStudentModal() {
+        document.getElementById('add-student-modal').classList.add('hidden');
+        document.getElementById('new-name').value = '';
+        document.getElementById('new-id').value = '';
+    }
+
+    function submitNewStudent() {
+        const name = document.getElementById('new-name').value;
+        const id = document.getElementById('new-id').value;
+        const grade = document.getElementById('new-grade').value;
+        const cls = document.getElementById('new-class').value;
+        const mobile = document.getElementById('new-mobile').value;
+
+        if(!name || !id || !grade) {
+            showEnhancedToast('danger', 'يرجى تعبئة الحقول الأساسية (الاسم، الهوية، الصف)');
+            return;
+        }
+
+        let stage = 'متوسط'; 
+        if(grade.includes('ثانوي')) stage = 'ثانوي';
+        if(grade.includes('ابتدائي')) stage = 'ابتدائي';
+
+        const studentData = { name, id, grade, class: cls, mobile, stage };
+
+        showEnhancedToast('info', 'جاري حفظ الطالب...');
+        google.script.run.withSuccessHandler(res => {
+            if(res.success) {
+                showEnhancedToast('success', 'تمت إضافة الطالب بنجاح');
+                closeAddStudentModal();
+                google.script.run.withSuccessHandler(data => {
+                    APP_DATA = data;
+                    loadSettingsStudents();
+                }).getInitialData();
+            } else {
+                showEnhancedToast('danger', 'خطأ: ' + res.error);
+            }
+        }).addStudentManually(studentData);
+    }
+
+    function deleteStudent(id, name) {
+        if(confirm(`هل أنت متأكد من حذف الطالب: ${name}؟\nلا يمكن التراجع عن هذا الإجراء.`)) {
+            showEnhancedToast('info', 'جاري الحذف...');
+            google.script.run.withSuccessHandler(res => {
+                if(res.success) {
+                    showEnhancedToast('success', 'تم حذف الطالب');
+                    settings_allStudents = settings_allStudents.filter(s => s['رقم الطالب'] != id);
+                    APP_DATA.students = APP_DATA.students.filter(s => s['رقم الطالب'] != id);
+                    renderSettingsTable(settings_allStudents);
+                } else {
+                    showEnhancedToast('danger', 'خطأ: ' + res.error);
+                }
+            }).deleteStudent(id);
+        }
+    }
+</script>

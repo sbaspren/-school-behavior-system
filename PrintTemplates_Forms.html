@@ -1,0 +1,781 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>نماذج الطباعة - نظام التوجيه</title>
+    <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Traditional+Arabic&display=swap" rel="stylesheet">
+    
+    <style>
+        @page { size: A4 portrait; margin: 1.0cm; } /* هوامش الطابعة */
+        
+        body { 
+            margin: 0; padding: 0; 
+            font-family: 'Traditional Arabic', 'Amiri', serif; 
+            font-size: 16pt; line-height: 1.2; 
+            direction: rtl; background-color: white; color: #000;
+        }
+
+        /* إخفاء جميع النماذج افتراضياً */
+        .print-template { display: none; }
+
+        .page-container {
+            width: 100%; max-width: 210mm; margin: 0 auto;
+            background: white; padding: 2.5cm 2.0cm; box-sizing: border-box;
+        }
+
+        /* كلاس خاص لضبط هوامش نماذج الإحالة فقط */
+        .referral-container {
+            padding: 0.5cm 1.0cm !important; 
+        }
+
+        .header-container { text-align: center; border-bottom: 2px solid #000; padding-bottom: 5px; margin-bottom: 15px; }
+        .header-logo { height: 80px; max-width: 100%; }
+        .confidential-mark { text-align: center; font-weight: bold; text-decoration: underline; color: #c0392b; margin-bottom: 10px; }
+        .form-title { text-align: center; font-size: 16pt !important; font-weight: bold; font-family: 'Amiri', serif; color: #000; margin-top: 4mm; margin-bottom: 4mm; }
+        .section-block { margin-bottom: 4mm; text-align: justify; }
+        .data-field { font-weight: bold; padding: 0 5px; }
+        .with-dots { border-bottom: 1px dotted #999; display: inline-block; text-align: center; min-width: 50px; height: 25px; vertical-align: bottom; overflow: hidden; white-space: nowrap; }
+        .align-right { text-align: right !important; }
+        .indic-num { font-family: 'Traditional Arabic'; font-weight: bold; }
+        .manual-checkbox { display: inline-block; width: 14px; height: 14px; border: 1px solid #000; margin-left: 5px; vertical-align: middle; position: relative; top: -2px; }
+        .tracking-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 14pt; }
+        .tracking-table th, .tracking-table td { border: 1px solid #000; padding: 5px; text-align: center; vertical-align: middle; }
+        .tracking-table th { background-color: #f2f2f2; font-weight: bold; }
+
+/* تخصيص للنماذج (8, 9, 15): تقليص الهوامش لضمان عدم الخروج عن الصفحة */
+        #form-group_ehala .tracking-table th, #form-group_ehala .tracking-table td,
+        #form-group_tahood .tracking-table th, #form-group_tahood .tracking-table td,
+        #form-rasd_slooki .tracking-table th, #form-rasd_slooki .tracking-table td {
+            padding: 2px !important;
+            font-size: 13pt;
+        }
+        .days-col { background-color: #f5f5f5; font-weight: bold; font-family: 'Traditional Arabic'; }
+        .footer-table { width: 100%; margin-top: 30px; border: none; }
+        .footer-table td { border: none; vertical-align: top; width: 33%; font-size: 16pt; text-align: center; }
+        .signature-block { display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .cut-line { text-align: center; margin: 25px 0 15px 0; border-top: 2px dashed #000; padding-top: 5px; font-size: 12pt; }
+        .sub-header { font-weight: bold; text-decoration: underline; margin-top: 10px; margin-bottom: 5px; }
+        .contact-box { border: 1px solid #000; padding: 10px; margin: 10px 0; background-color: #fafafa; }
+        .info-box { border: 1px solid #000; padding: 10px; margin-bottom: 10px; }
+        .box-title { font-weight: bold; display: block; margin-bottom: 5px; text-decoration: underline; }
+        .risk-box { border: 2px solid #c0392b; padding: 10px; margin: 10px 0; }
+        .internal-section { border-top: 2px dashed #000; margin-top: 30px; padding-top: 15px; }
+        .feedback-box { border: 1px solid #999; height: 80px; margin-top: 5px; width: 100%; }
+
+        @media print { 
+            @page { size: A4 portrait; margin: 1.0cm; }
+            body { background: white; -webkit-print-color-adjust: exact; }
+            .page-container { width: 100%; margin: 0; padding: 0; }
+            .no-print { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="print-template" id="form-ishar_wali_amr">
+    <div class="page-container">
+        <div class="header-container"><img src="https://i.ibb.co/5WxLGJPD/2025-11-15-233559.png" class="header-logo" alt="الشعار"></div>
+        <div class="confidential-mark">(سري)</div>
+        <div class="form-title">إشعار ولي أمر الطالب بمشكلة سلوكية</div>
+        <div class="form-body">
+            <div class="section-block">المكرم ولي أمر الطالب: <span class="data-field with-dots" style="min-width: 200px;" id="studentName"></span> بالصف: <span class="data-field with-dots" style="min-width: 100px;" id="grade"></span></div>
+            <div class="section-block">في يوم: <span class="data-field with-dots" id="violationDay"></span> الموافق: <span class="data-field with-dots indic-num" style="min-width: 120px;" id="violationDate"></span></div>
+            <div class="section-block">السلام عليكم ورحمة الله وبركاته،،</div>
+            <div class="section-block align-right">نشعركم بأن الطالب المذكور أعلاه قام بارتكاب مخالفة سلوكية من الدرجة (<span class="data-field with-dots indic-num" style="min-width: 30px;" id="violationDegree"></span>)، وهي: <span class="data-field with-dots align-right" style="width: 80%; display:inline-block" id="violationText"></span></div>
+            <div class="section-block">وقد قررت إدارة المدرسة اتخاذ الإجراءات التالية حياله وفق ما ورد في قواعد السلوك والمواظبة:
+                <div style="margin-right: 30px; margin-top: 5px;">
+                    <div style="margin-bottom: 5px;"><span class="indic-num">١.</span> <span class="data-field with-dots align-right" style="width: 80%;" id="proc_1"></span></div>
+                    <div style="margin-bottom: 5px;"><span class="indic-num">٢.</span> <span class="data-field with-dots align-right" style="width: 80%;" id="proc_2"></span></div>
+                    <div style="margin-bottom: 5px;"><span class="indic-num">٣.</span> <span class="data-field with-dots align-right" style="width: 80%;" id="proc_3"></span></div>
+                </div>
+            </div>
+            <div class="section-block">لذا يرجى منكم المتابعة والتعاون مع المدرسة بما يسهم في انضباط سلوك ابنكم، وتفضلوا بقبول التحية.</div>
+            <table class="footer-table"><tr><td><div style="border: 2px dashed #ccc; width: 80px; height: 80px; margin: 0 auto; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12pt;">الختم</div></td><td></td><td><div class="signature-block"><strong style="display: block; margin-bottom: 0.8em;">مدير المدرسة</strong><div style="margin-bottom: 5px;">الاسم: <span class="data-field" id="managerName"></span></div><div style="white-space: nowrap;">التوقيع: ........................</div></div></td></tr></table>
+        </div>
+        <div class="cut-line">( قص من هنا وإعادة الجزء الأسفل )</div>
+        <div style="margin-top: 15px;">
+            <div class="form-title" style="text-decoration: underline; margin-top: 5px;">إيصال استلام إشعار</div>
+            <div class="section-block" style="margin-bottom: 4mm;">أقر أنا ولي أمر الطالب: <span class="data-field with-dots" id="studentName_2"></span> بأنني استلمت الإشعار الخاص بالمخالفة السلوكية، وسأقوم بمتابعة ابني.</div>
+            <div style="display: flex; justify-content: space-between; margin-top: 20px; font-weight: bold;"><div>الاسم: ........................</div><div>التوقيع: ........................</div><div>التاريخ: <span class="with-dots indic-num" style="min-width: 120px;"></span></div></div>
+        </div>
+    </div>
+</div>
+
+<div class="print-template" id="form-tahood_slooki">
+    <div class="page-container">
+        <div class="header-container"><img src="https://i.ibb.co/5WxLGJPD/2025-11-15-233559.png" class="header-logo" alt="الشعار"></div>
+        <div class="form-title">إقرار وتعهد سلوكي</div>
+        <div class="form-body">
+            <div class="section-block align-right">أقر أنا الطالب: <span class="data-field with-dots" style="min-width: 250px;" id="tahood_studentName"></span> بالصف: <span class="data-field with-dots" style="min-width: 120px;" id="tahood_grade"></span></div>
+            <div class="section-block">بأنني قمت في يوم: <span class="data-field with-dots" style="min-width: 80px;" id="tahood_day"></span> الموافق: <span class="data-field with-dots indic-num" style="min-width: 120px;" id="tahood_date"></span></div>
+            <div class="section-block align-right">بارتكاب مخالفة سلوكية من الدرجة (<span class="data-field with-dots indic-num" style="min-width: 40px;" id="tahood_degree"></span>)، وهي: <span class="data-field with-dots align-right" style="width: 100%; display:inline-block" id="tahood_text"></span></div>
+            <div class="section-block" style="margin-top: 20px; font-weight: bold; text-align: justify;">وأتعهد بعدم تكرار هذه المخالفة أو أي مخالفة سلوكية أخرى مستقبلاً، والالتزام بالأنظمة المدرسية واحترام توجيهات المعلمين وإدارة المدرسة، وفي حال تكرار المخالفة أتحمل كافة الإجراءات النظامية المترتبة على ذلك.</div>
+            <div class="section-block" style="text-align: center; margin-top: 15px;">وعلى ذلك جرى التوقيع والعلم.</div>
+            <table class="footer-table" style="margin-top: 40px;"><tr><td><div class="signature-block"><strong style="display: block; margin-bottom: 0.8em;">الطالب المقر</strong><div style="margin-bottom: 5px; white-space: nowrap;">الاسم: <span class="data-field with-dots" style="min-width: 150px;"></span></div><div style="white-space: nowrap;">التوقيع: <span class="with-dots" style="min-width: 150px;"></span></div></div></td><td><div class="signature-block"><strong style="display: block; margin-bottom: 0.8em;">ولي أمر الطالب</strong><div style="margin-bottom: 5px; white-space: nowrap;">الاسم: <span class="data-field with-dots" style="min-width: 150px;"></span></div><div style="white-space: nowrap;">التوقيع: <span class="with-dots" style="min-width: 150px;"></span></div></div></td><td><div class="signature-block"><strong style="display: block; margin-bottom: 0.8em;">مدير المدرسة</strong><div style="margin-bottom: 5px; white-space: nowrap;">الاسم: <span class="data-field with-dots" style="min-width: 150px;"></span></div><div style="white-space: nowrap;">التوقيع: <span class="with-dots" style="min-width: 150px;"></span></div></div></td></tr></table>
+        </div>
+    </div>
+</div>
+
+<div class="print-template" id="form-dawat_wali_amr">
+    <div class="page-container">
+        <div class="header-container"><img src="https://i.ibb.co/5WxLGJPD/2025-11-15-233559.png" class="header-logo" alt="الشعار"></div>
+        <div class="form-title">خطاب دعوة ولي أمر طالب</div>
+        <div class="form-body">
+            <div class="section-block">المكرم ولي أمر الطالب: <span class="data-field with-dots" style="min-width: 250px;" id="dawat_studentName"></span> بالصف: <span class="data-field with-dots" style="min-width: 120px;" id="dawat_grade"></span></div>
+            <div class="section-block">السلام عليكم ورحمة الله وبركاته،،</div>
+            <div class="section-block" style="white-space: nowrap;">نأمل منكم التكرم بالحضور إلى المدرسة في يوم: <span class="data-field with-dots" style="min-width: 80px;"></span> الموافق: <span class="data-field with-dots indic-num" style="min-width: 120px;"></span> الساعة: <span class="data-field with-dots indic-num" style="min-width: 60px;"></span> صباحاً.</div>
+            <div class="section-block">وذلك لمقابلة: <span class="data-field with-dots" style="width: 50%;"></span></div>
+            <div class="section-block align-right">الهدف من الزيارة: <span class="data-field with-dots align-right" style="width: 100%; display: inline-block;" id="dawat_visitReason"></span></div>
+            <div class="section-block" style="margin-top: 8mm;">شاكرين لكم تعاونكم وحرصكم على مصلحة ابنكم التعليمية والتربوية.</div>
+            <table class="footer-table"><tr><td><div style="border: 2px dashed #ccc; width: 80px; height: 80px; margin: 0 auto; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12pt;">الختم</div></td><td></td><td><div class="signature-block"><strong style="display: block; margin-bottom: 0.8em;">مدير المدرسة</strong><div style="margin-bottom: 5px; white-space: nowrap;">الاسم: <span class="data-field with-dots" style="min-width: 200px;" id="dawat_managerName"></span></div><div style="white-space: nowrap;">التوقيع: <span class="with-dots" style="min-width: 200px;"></span></div></div></td></tr></table>
+        </div>
+        <div class="cut-line">( قص من هنا وإعادة الجزء الأسفل )</div>
+        <div style="margin-top: 15px;">
+            <div class="form-title" style="text-decoration: underline; margin-top: 5px;">رد ولي الأمر</div>
+            <div class="section-block"><span class="manual-checkbox"></span> اطلعت، وسأحضر في الموعد المحدد إن شاء الله.</div>
+            <div class="section-block"><span class="manual-checkbox"></span> اطلعت، وأرغب بتغيير الموعد ليوم: <span class="with-dots" style="min-width: 100px;"></span> الموافق: <span class="indic-num with-dots" style="min-width: 120px;"></span></div>
+            <div style="display: flex; justify-content: space-between; margin-top: 20px; font-weight: bold;"><div style="white-space: nowrap;">الاسم: <span class="with-dots" style="min-width: 180px;"></span></div><div style="white-space: nowrap;">التوقيع: <span class="with-dots" style="min-width: 180px;"></span></div><div style="white-space: nowrap;">التاريخ: <span class="indic-num with-dots" style="min-width: 120px;"></span></div></div>
+        </div>
+    </div>
+</div>
+
+<div class="print-template" id="form-mahdar_dab_wakea">
+    <div class="page-container">
+        <div class="header-container"><img src="https://i.ibb.co/5WxLGJPD/2025-11-15-233559.png" class="header-logo" alt="الشعار"></div>
+        <div class="confidential-mark">(سري)</div>
+        <div class="form-title">محضر ضبط واقعة / مخالفة</div>
+        <div class="form-body">
+            <div class="section-block">إنه في يوم: <span class="data-field with-dots" style="min-width: 80px;" id="mahdar_day"></span> الموافق: <span class="data-field with-dots indic-num" style="min-width: 120px;" id="mahdar_date"></span></div>
+            <div class="section-block align-right">تم ضبط الطالب: <span class="data-field with-dots" style="min-width: 250px;" id="mahdar_studentName"></span> بالصف: <span class="data-field with-dots" style="min-width: 120px;" id="mahdar_grade"></span></div>
+            <div class="section-block align-right">بسبب قيامه بـ: <span class="data-field with-dots align-right" style="width: 100%; display: inline-block;" id="mahdar_problem"></span></div>
+            <div class="section-block align-right">مكان الضبط (يكتب يدوياً): <span class="with-dots" style="min-width: 60%;"></span></div>
+            <div class="section-block" style="border: 1px solid #999; padding: 10px; margin-top: 10px;"><strong>نوع المشاهدة / المضبوطات:</strong><br><div style="margin-top: 5px; display: flex; flex-wrap: wrap; gap: 20px;"><span><span class="manual-checkbox"></span> صور/فيديو</span><span><span class="manual-checkbox"></span> محادثات</span><span><span class="manual-checkbox"></span> تدخين/ممنوعات</span><span><span class="manual-checkbox"></span> أخرى: <span class="with-dots" style="min-width: 100px;"></span></span></div></div>
+            <div class="section-block" style="margin-top: 15px;"><strong>شهود الواقعة:</strong><table class="tracking-table"><thead><tr><th style="width: 5%;">م</th><th style="width: 35%;">الاسم</th><th style="width: 20%;">الوظيفة</th><th style="width: 20%;">العمل المسند</th><th style="width: 20%;">التوقيع</th></tr></thead><tbody><tr><td class="indic-num">١</td><td></td><td></td><td></td><td></td></tr><tr><td class="indic-num">٢</td><td></td><td></td><td></td><td></td></tr></tbody></table></div>
+            <table class="footer-table"><tr><td><div class="signature-block"><strong style="display: block; margin-bottom: 0.8em;">الطالب</strong><div style="margin-bottom: 5px; white-space: nowrap;">الاسم: <span class="data-field with-dots" style="min-width: 150px;"></span></div><div style="white-space: nowrap;">التوقيع: <span class="with-dots" style="min-width: 150px;"></span></div></div></td><td><div class="signature-block"><strong style="display: block; margin-bottom: 0.8em;">ولي الأمر (للعلم)</strong><div style="margin-bottom: 5px; white-space: nowrap;">الاسم: <span class="data-field with-dots" style="min-width: 150px;"></span></div><div style="white-space: nowrap;">التوقيع: <span class="with-dots" style="min-width: 150px;"></span></div></div></td><td><div class="signature-block"><strong style="display: block; margin-bottom: 0.8em;">مدير المدرسة</strong><div style="margin-bottom: 5px; white-space: nowrap;">الاسم: <span class="data-field with-dots" style="min-width: 150px;"></span></div><div style="white-space: nowrap;">التوقيع: <span class="with-dots" style="min-width: 150px;"></span></div></div></td></tr></table>
+        </div>
+    </div>
+</div>
+
+<div class="print-template" id="form-mahdar_lajnah">
+    <div class="page-container">
+        <div class="header-container"><img src="https://i.ibb.co/5WxLGJPD/2025-11-15-233559.png" class="header-logo" alt="الشعار"></div>
+        <div class="form-title">محضر اجتماع لجنة التوجيه الطلابي<br><span style="font-size: 14pt; font-weight: normal;">(لدراسة مخالفة سلوكية)</span></div>
+        <div class="form-body">
+            <div class="section-block">إنه في يوم: <span class="data-field with-dots" style="min-width: 80px;" id="lajnah_day"></span> الموافق: <span class="data-field with-dots indic-num" style="min-width: 120px;" id="lajnah_date"></span> عقدت لجنة التوجيه الطلابي اجتماعاً طارئاً برئاسة مدير المدرسة.</div>
+            <div class="section-block align-right">وذلك للنظر في موضوع الطالب: <span class="data-field with-dots" style="min-width: 200px;" id="lajnah_studentName"></span> بالصف: <span class="data-field with-dots" style="min-width: 120px;" id="lajnah_grade"></span></div>
+            <div class="sub-header">أولاً: وصف المخالفة / الحالة:</div>
+            <div class="section-block align-right">قيام الطالب بارتكاب مخالفة من الدرجة (<span class="indic-num data-field with-dots" style="min-width: 30px;" id="lajnah_degree"></span>)، وهي: <span class="data-field with-dots align-right" style="width: 100%; display: inline-block;" id="lajnah_desc"></span></div>
+            <div class="sub-header">ثانياً: الإجراءات التربوية المتخذة سابقاً:</div>
+            <div class="section-block align-right" id="lajnah_prev_procedures"><div style="margin-bottom: 5px;"><span class="indic-num">١.</span> <span class="data-field with-dots align-right" style="width: 90%;"></span></div><div style="margin-bottom: 5px;"><span class="indic-num">٢.</span> <span class="data-field with-dots align-right" style="width: 90%;"></span></div></div>
+            <div class="sub-header">ثالثاً: توصيات وقرارات اللجنة:</div>
+            <div class="section-block align-right">بعد دراسة الحالة والاطلاع على ملف الطالب، قررت اللجنة ما يلي:<div style="margin-top: 5px;"><div style="margin-bottom: 5px;"><span class="indic-num">١.</span> <span class="data-field with-dots align-right" style="width: 90%;"></span></div><div style="margin-bottom: 5px;"><span class="indic-num">٢.</span> <span class="data-field with-dots align-right" style="width: 90%;"></span></div></div></div>
+            <div class="sub-header">أعضاء اللجنة:</div>
+            <table class="tracking-table"><thead><tr><th style="width: 5%;">م</th><th style="width: 35%;">الاسم</th><th style="width: 25%;">العمل المكلف به</th><th style="width: 35%;">التوقيع</th></tr></thead><tbody id="lajnah_members_table"><tr><td class="indic-num">١</td><td></td><td></td><td></td></tr><tr><td class="indic-num">٢</td><td></td><td></td><td></td></tr><tr><td class="indic-num">٣</td><td></td><td></td><td></td></tr><tr><td class="indic-num">٤</td><td></td><td></td><td></td></tr><tr><td class="indic-num">٥</td><td></td><td></td><td></td></tr><tr><td class="indic-num">٦</td><td></td><td></td><td></td></tr><tr><td class="indic-num">٧</td><td></td><td></td><td></td></tr></tbody></table>
+        </div>
+    </div>
+</div>
+
+<div class="print-template" id="form-mahdar_lajnah_absence">
+    <div class="page-container">
+        <div class="header-container"><img src="https://i.ibb.co/5WxLGJPD/2025-11-15-233559.png" class="header-logo" alt="الشعار"></div>
+        <div class="form-title">محضر اجتماع لجنة التوجيه الطلابي<br><span style="font-size: 14pt; font-weight: normal;">(لدراسة حالة غياب طالب)</span></div>
+        <div class="form-body">
+            <div class="section-block">إنه في يوم: <span class="data-field with-dots" style="min-width: 80px;" id="lajnah_abs_day"></span> الموافق: <span class="data-field with-dots indic-num" style="min-width: 120px;" id="lajnah_abs_date"></span> عقدت لجنة التوجيه الطلابي اجتماعاً طارئاً برئاسة مدير المدرسة.</div>
+            <div class="section-block align-right">وذلك للنظر في موضوع الطالب: <span class="data-field with-dots" style="min-width: 250px;" id="lajnah_abs_studentName"></span> بالصف: <span class="data-field with-dots" style="min-width: 120px;" id="lajnah_abs_grade"></span></div>
+            <div class="sub-header">أولاً: وصف الحالة:</div>
+            <div class="section-block align-right"> <span>عدم انتظام الطالب في الحضور للمدرسة، ووصول غيابه إلى:</span> <span class="data-field with-dots indic-num" id="lajnahabsUnexcusedSpan" style="min-width:60px"></span> <span>يوماً بدون عذر، و</span> <span class="data-field with-dots indic-num" id="lajnahabsExcusedSpan" style="min-width:60px"></span> <span>يوماً بعذر.</span>
+</div>
+
+            <div class="sub-header">ثانياً: توصيات وقرارات اللجنة:</div>
+            <div class="section-block align-right"><div style="margin-bottom: 5px;"><span class="indic-num">١.</span> <span class="data-field with-dots align-right" style="width: 90%;"></span></div><div style="margin-bottom: 5px;"><span class="indic-num">٢.</span> <span class="data-field with-dots align-right" style="width: 90%;"></span></div><div style="margin-bottom: 5px;"><span class="indic-num">٣.</span> <span class="data-field with-dots align-right" style="width: 90%;"></span></div></div>
+            <div class="sub-header">أعضاء اللجنة:</div>
+            <table class="tracking-table"><thead><tr><th style="width: 5%;">م</th><th style="width: 35%;">الاسم</th><th style="width: 25%;">العمل المكلف به</th><th style="width: 35%;">التوقيع</th></tr></thead><tbody id="lajnah_abs_members_table"><tr><td class="indic-num">١</td><td></td><td></td><td></td></tr><tr><td class="indic-num">٢</td><td></td><td></td><td></td></tr><tr><td class="indic-num">٣</td><td></td><td></td><td></td></tr><tr><td class="indic-num">٤</td><td></td><td></td><td></td></tr><tr><td class="indic-num">٥</td><td></td><td></td><td></td></tr><tr><td class="indic-num">٦</td><td></td><td></td><td></td></tr><tr><td class="indic-num">٧</td><td></td><td></td><td></td></tr></tbody></table>
+        </div>
+    </div>
+</div>
+
+<div class="print-template" id="form-ehalat_talib">
+    <div class="page-container referral-container">
+        <div class="header-container"><img src="https://i.ibb.co/5WxLGJPD/2025-11-15-233559.png" class="header-logo" alt="الشعار"></div>
+        <div class="confidential-mark">(سري)</div>
+        <div class="form-title">نموذج إحالة طالب إلى الموجه الطلابي</div>
+        <div class="form-body">
+            <div class="section-block"><strong>المكرم الموجه الطلابي بالمدرسة .. وفقكم الله</strong></div>
+            <div class="section-block">السلام عليكم ورحمة الله وبركاته،،</div>
+            <div class="section-block align-right">نحيل إليكم الطالب: <span class="data-field with-dots" style="min-width: 250px;" id="ehala_studentName"></span> بالصف: <span class="data-field with-dots" style="min-width: 120px;" id="ehala_grade"></span></div>
+            <div class="section-block align-right">حيث لوحظ عليه: <span class="data-field with-dots align-right" style="width: 100%; display: inline-block;" id="ehala_text"></span></div>
+            <div class="section-block align-right">تاريخ المشكلة: <span class="data-field with-dots indic-num" style="min-width: 120px;"></span> &nbsp;&nbsp;&nbsp; درجة المخالفة: <span class="data-field with-dots indic-num" style="min-width: 50px;" id="ehala_degree"></span></div>
+            <div class="section-block" style="margin-top: 15px;">نأمل منكم دراسة حالة الطالب، واتخاذ الإجراءات التربوية والعلاجية المناسبة، وإفادتنا بما تم.</div>
+            <table class="footer-table"><tr><td><div style="border: 2px dashed #ccc; width: 80px; height: 80px; margin: 0 auto; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12pt;">الختم</div></td><td></td><td><div class="signature-block"><strong style="display: block; margin-bottom: 0.8em;">وكيل شؤون الطلاب</strong><div style="margin-bottom: 5px; white-space: nowrap;">الاسم: <span class="with-dots" style="min-width: 200px;"></span></div><div style="white-space: nowrap;">التوقيع: <span class="with-dots" style="min-width: 200px;"></span></div></div></td></tr></table>
+            <div class="internal-section">
+                <div class="section-block" style="font-weight: bold; text-decoration: underline;">إفادة الموجه الطلابي (للاستخدام الداخلي):</div>
+                <div class="section-block">تم الاطلاع على الحالة واتخاذ الإجراءات التالية:</div>
+                <div class="feedback-box"></div>
+                <div style="display: flex; justify-content: space-between; margin-top: 20px; font-weight: bold;"><div style="white-space: nowrap;">الاسم: <span class="with-dots" style="min-width: 180px;"></span></div><div style="white-space: nowrap;">التوقيع: <span class="with-dots" style="min-width: 180px;"></span></div><div style="white-space: nowrap;">التاريخ: <span class="indic-num with-dots" style="min-width: 120px;"></span></div></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="print-template" id="form-group_ehala">
+    <div class="page-container">
+        
+        <div class="header-container">
+            <img src="https://i.ibb.co/5WxLGJPD/2025-11-15-233559.png" class="header-logo" alt="الشعار">
+        </div>
+
+        <div class="form-title">نموذج إحالة للموجه الطلابي</div>
+
+        <div class="form-body">
+            <div class="section-block" style="text-align: center;">
+                التاريخ: <span id="ge_date" class="data-field with-dots indic-num" style="min-width: 120px;"></span>
+            </div>
+
+            <div class="section-block align-right">
+                <strong>المكرم الموجه الطلابي.. وفقكم الله</strong>
+            </div>
+
+            <div class="section-block align-right">
+                نحيل إليكم بيان بأسماء الطلاب الذين تجاوزوا حد الغياب المسموح، لمتابعة حالاتهم واتخاذ اللازم.
+            </div>
+
+            <table class="tracking-table">
+                <thead>
+                    <tr>
+                        <th style="width: 5%;">م</th>
+                        <th style="width: 22%;">اسم الطالب</th>
+                        <th style="width: 13%;">الصف</th>
+                        <th style="width: 10%;">بدون عذر</th>
+                        <th style="width: 10%;">بعذر</th>
+                        <th style="width: 40%;">ما تم حيال الطالب (من الموجه)</th>
+                    </tr>
+                </thead>
+                <tbody id="ge_table_body">
+                    <tr><td class="indic-num">١</td><td></td><td></td><td></td><td></td><td></td></tr>
+                    <tr><td class="indic-num">٢</td><td></td><td></td><td></td><td></td><td></td></tr>
+                    <tr><td class="indic-num">٣</td><td></td><td></td><td></td><td></td><td></td></tr>
+                    <tr><td class="indic-num">٤</td><td></td><td></td><td></td><td></td><td></td></tr>
+                    <tr><td class="indic-num">٥</td><td></td><td></td><td></td><td></td><td></td></tr>
+                    <tr><td class="indic-num">٦</td><td></td><td></td><td></td><td></td><td></td></tr>
+                    <tr><td class="indic-num">٧</td><td></td><td></td><td></td><td></td><td></td></tr>
+                    <tr><td class="indic-num">٨</td><td></td><td></td><td></td><td></td><td></td></tr>
+                </tbody>
+            </table>
+            
+            <table class="footer-table">
+                <tr>
+                    <td style="width: 100%; text-align: left; padding-left: 30px;">
+                        <div style="display: inline-block; text-align: center;">
+                            <strong style="display: block; margin-bottom: 0.5em;">وكيل شؤون الطلاب</strong>
+                            <div style="margin-bottom: 5px; white-space: nowrap;">
+                                الاسم: <span id="ge_deputy" class="with-dots" style="min-width: 150px;"></span>
+                            </div>
+                            <div style="white-space: nowrap;">
+                                التوقيع: <span class="with-dots" style="min-width: 150px;"></span>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+            </table>
+        </div>
+
+    </div>
+</div>
+
+<div class="print-template" id="form-rasd_slooki">
+    <div class="page-container">
+        
+        <div class="header-container">
+            <img src="https://i.ibb.co/5WxLGJPD/2025-11-15-233559.png" class="header-logo" alt="الشعار">
+        </div>
+
+        <div class="form-title">استمارة رصد المخالفات السلوكية (ملف الطالب)</div>
+
+        <div class="form-body">
+            <div class="section-block" style="display: flex; justify-content: space-between; margin-bottom: 20px;">
+                <div style="width: 45%; white-space: nowrap;">اسم الطالب: <span class="data-field with-dots" style="width: 70%;" id="rasd_s_studentName"></span></div>
+                <div style="width: 25%; white-space: nowrap;">الصف: <span class="data-field with-dots" style="width: 60%;" id="rasd_s_grade"></span></div>
+                <div style="width: 25%; white-space: nowrap;">الفصل: <span class="data-field with-dots" style="width: 60%;" id="rasd_s_class"></span></div>
+            </div>
+
+            <table class="tracking-table">
+                <thead>
+                    <tr>
+                        <th style="width: 5%;">م</th>
+                        <th style="width: 25%;">المخالفة</th>
+                        <th style="width: 5%;">د</th>
+                        <th style="width: 15%;">التاريخ</th>
+                        <th style="width: 35%;">الإجراء المتخذ</th>
+                        <th style="width: 15%;">توقيع الطالب</th>
+                    </tr>
+                </thead>
+                <tbody id="rs_table_body">
+                    <tr><td class="indic-num">١</td><td></td><td></td><td></td><td></td><td></td></tr>
+                    <tr><td class="indic-num">٢</td><td></td><td></td><td></td><td></td><td></td></tr>
+                    <tr><td class="indic-num">٣</td><td></td><td></td><td></td><td></td><td></td></tr>
+                    <tr><td class="indic-num">٤</td><td></td><td></td><td></td><td></td><td></td></tr>
+                    <tr><td class="indic-num">٥</td><td></td><td></td><td></td><td></td><td></td></tr>
+                    <tr><td class="indic-num">٦</td><td></td><td></td><td></td><td></td><td></td></tr>
+                    <tr><td class="indic-num">٧</td><td></td><td></td><td></td><td></td><td></td></tr>
+                    <tr><td class="indic-num">٨</td><td></td><td></td><td></td><td></td><td></td></tr>
+                </tbody>
+            </table>
+            
+            <table class="footer-table">
+                <tr>
+                    <td style="width: 100%; text-align: left; padding-left: 30px;">
+                        <div style="display: inline-block; text-align: center;">
+                            <strong style="display: block; margin-bottom: 0.5em;">وكيل شؤون الطلاب</strong>
+                            <div style="margin-bottom: 5px; white-space: nowrap;">
+                                الاسم: <span id="rs_deputy" class="with-dots" style="min-width: 150px;"></span>
+                            </div>
+                            <div style="white-space: nowrap;">
+                                التوقيع: <span class="with-dots" style="min-width: 150px;"></span>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+            </table>
+        </div>
+
+    </div>
+</div>
+
+<div class="print-template" id="form-tawid_darajat">
+    <div class="page-container">
+        
+        <div class="header-container">
+            <img src="https://i.ibb.co/5WxLGJPD/2025-11-15-233559.png" class="header-logo" alt="الشعار">
+        </div>
+
+        <div class="form-title">استمارة فرص تعويض درجات السلوك الإيجابي</div>
+
+        <div class="form-body">
+            <div class="section-block" style="display: flex; justify-content: space-between; margin-bottom: 15px;">
+                <div style="width: 45%; white-space: nowrap;">اسم الطالب: <span class="data-field with-dots" style="width: 70%;" id="tawid_studentName"></span></div>
+                <div style="width: 25%; white-space: nowrap;">الصف: <span class="data-field with-dots" style="width: 60%;" id="tawid_grade"></span></div>
+                <div style="width: 25%; white-space: nowrap;">الفصل: <span class="data-field with-dots" style="width: 60%;" id="tawid_class"></span></div>
+            </div>
+
+            <div style="border: 2px solid #333; padding: 10px; margin-bottom: 20px; background-color: #f9f9f9; border-radius: 5px;">
+                <div style="font-weight: bold; text-decoration: underline; margin-bottom: 8px;">بيانات المخالفة السلوكية المراد تعويضها:</div>
+                <table style="width: 100%; border: none;">
+                    <tr>
+                        <td style="border: none; padding: 5px; text-align: right;"><strong>المشكلة السلوكية:</strong> <span id="tawid_v_name" class="data-field with-dots" style="min-width: 200px;"></span></td>
+                        <td style="border: none; padding: 5px; text-align: right;"><strong>نوعها/درجتها:</strong> <span id="tawid_v_degree" class="data-field with-dots indic-num" style="min-width: 50px;"></span></td>
+                    </tr>
+                    <tr>
+                        <td style="border: none; padding: 5px; text-align: right;"><strong>تاريخ وقوعها:</strong> <span id="tawid_v_date" class="data-field with-dots indic-num" style="min-width: 100px;"></span></td>
+                        <td style="border: none; padding: 5px; text-align: right;"><strong>الدرجات المحسومة:</strong> <span id="tawid_v_points" class="data-field with-dots indic-num" style="min-width: 50px; color: #c0392b;"></span></td>
+                    </tr>
+                </table>
+            </div>
+
+            <table class="tracking-table">
+                <thead>
+                    <tr>
+                        <th style="width: 5%;">م</th>
+                        <th style="width: 45%;">فرص التعويض للدرجات المحسومة من السلوك</th>
+                        <th style="width: 15%;">مقدار درجات التعويض</th>
+                        <th style="width: 15%;">التاريخ</th>
+                        <th style="width: 20%;">الدرجات المكتسبة</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td class="indic-num">١</td>
+                        <td style="text-align: right; padding-right: 5px;">انضباط الطالب وعدم غيابه دون عذر خلال الفصل الدراسي</td>
+                        <td class="indic-num">٣ درجات</td>
+                        <td></td>
+                        <td></td>
+                    </tr>
+                    <tr>
+                        <td class="indic-num">٢</td>
+                        <td style="text-align: right; padding-right: 5px;">المحافظة على الهوية الوطنية (اللباس والمظهر العام، الالتزام بقيم الولاء)</td>
+                        <td class="indic-num">٣ درجات</td>
+                        <td></td>
+                        <td></td>
+                    </tr>
+                    <tr>
+                        <td class="indic-num">٣</td>
+                        <td style="text-align: right; padding-right: 5px;">المشاركة في المبادرات والأعمال التطوعية داخل المدرسة</td>
+                        <td class="indic-num">٣ درجات</td>
+                        <td></td>
+                        <td></td>
+                    </tr>
+                    <tr>
+                        <td class="indic-num">٤</td>
+                        <td style="text-align: right; padding-right: 5px;">المشاركة في الإذاعة والأنشطة المدرسية</td>
+                        <td class="indic-num">٣ درجات</td>
+                        <td></td>
+                        <td></td>
+                    </tr>
+                    <tr>
+                        <td class="indic-num">٥</td>
+                        <td style="text-align: right; padding-right: 5px;">المحافظة على ممتلكات المدرسة</td>
+                        <td class="indic-num">درجتان</td>
+                        <td></td>
+                        <td></td>
+                    </tr>
+                    <tr>
+                        <td class="indic-num">٦</td>
+                        <td style="text-align: right; padding-right: 5px;">التعاون مع الزملاء والمعلمين وإدارة المدرسة</td>
+                        <td class="indic-num">درجتان</td>
+                        <td></td>
+                        <td></td>
+                    </tr>
+                    <tr>
+                        <td class="indic-num">٧</td>
+                        <td style="text-align: right; padding-right: 5px;">الالتحاق ببرامج ودورات في مجال التطوير الشخصي</td>
+                        <td class="indic-num">درجتان</td>
+                        <td></td>
+                        <td></td>
+                    </tr>
+                    <tr>
+                        <td class="indic-num">٨</td>
+                        <td style="text-align: right; padding-right: 5px;">تقديم المقترحات التطويرية لصالح المجتمع المدرسي</td>
+                        <td class="indic-num">درجتان</td>
+                        <td></td>
+                        <td></td>
+                    </tr>
+                </tbody>
+            </table>
+            
+            <div class="section-block" style="margin-top: 10px; font-size: 12pt;">
+                <strong>ملاحظة:</strong> إحضار الشواهد التي تثبت مشاركة الطالب من الجهات ذات العلاقة سواء داخل المدرسة أو خارجها.
+            </div>
+
+            <table class="footer-table" style="margin-top: 30px;">
+                <tr>
+                    <td style="width: 33%;">
+                        <div class="signature-block">
+                            <strong style="display: block; margin-bottom: 0.5em;">الطالب</strong>
+                            <div style="white-space: nowrap;">التوقيع: <span class="with-dots" style="min-width: 120px;"></span></div>
+                        </div>
+                    </td>
+                    <td style="width: 33%;">
+                        <div class="signature-block">
+                            <strong style="display: block; margin-bottom: 0.5em;">الموجه الطلابي</strong>
+                            <div style="margin-bottom: 5px; white-space: nowrap;">
+                                الاسم: <span id="tawid_guide" class="with-dots" style="min-width: 150px;"></span>
+                            </div>
+                            <div style="white-space: nowrap;">
+                                التوقيع: <span class="with-dots" style="min-width: 120px;"></span>
+                            </div>
+                        </div>
+                    </td>
+                    <td style="width: 33%;">
+                        <div class="signature-block">
+                            <strong style="display: block; margin-bottom: 0.5em;">وكيل شؤون الطلاب</strong>
+                            <div style="margin-bottom: 5px; white-space: nowrap;">
+                                الاسم: <span id="tawid_deputy" class="with-dots" style="min-width: 150px;"></span>
+                            </div>
+                            <div style="white-space: nowrap;">
+                                التوقيع: <span class="with-dots" style="min-width: 120px;"></span>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+            </table>
+        </div>
+
+    </div>
+</div>
+
+<div class="print-template" id="form-rasd_tamayuz">
+    <div class="page-container">
+        <div class="header-container"><img src="https://i.ibb.co/5WxLGJPD/2025-11-15-233559.png" class="header-logo" alt="الشعار"></div>
+        <div class="form-title">سجل رصد السلوك المتميز والتعزيز</div>
+        <div class="form-body">
+            <div class="section-block align-right">اسم الطالب: <span class="data-field with-dots" style="min-width: 250px;" id="rasd_studentName"></span> الصف: <span class="data-field with-dots" style="min-width: 120px;" id="rasd_grade"></span></div>
+            <table class="tracking-table"><thead><tr><th style="width: 40%;">السلوك الإيجابي</th><th style="width: 15%;">التاريخ</th><th style="width: 15%;">النقاط</th><th style="width: 30%;">المعلم / المشرف</th></tr></thead><tbody><tr><td style="height: 40px;"></td><td></td><td></td><td></td></tr><tr><td style="height: 40px;"></td><td></td><td></td><td></td></tr><tr><td style="height: 40px;"></td><td></td><td></td><td></td></tr><tr><td style="height: 40px;"></td><td></td><td></td><td></td></tr><tr><td style="height: 40px;"></td><td></td><td></td><td></td></tr><tr><td style="height: 40px;"></td><td></td><td></td><td></td></tr></tbody></table>
+            <table class="footer-table"><tr><td style="width: 33%;"><div style="border: 2px dashed #ccc; width: 80px; height: 80px; margin: 0 auto; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12pt;">الختم</div></td><td style="width: 33%;"><div class="signature-block"><strong style="display: block; margin-bottom: 0.8em;">وكيل شؤون الطلاب</strong><div style="white-space: nowrap;">التوقيع: <span class="with-dots" style="min-width: 150px;"></span></div></div></td><td style="width: 33%;"><div class="signature-block"><strong style="display: block; margin-bottom: 0.8em;">مدير المدرسة</strong><div style="white-space: nowrap;">التوقيع: <span class="with-dots" style="min-width: 150px;"></span></div></div></td></tr></table>
+        </div>
+    </div>
+</div>
+
+<div class="print-template" id="form-ghiab_bidon_ozr">
+    <div class="page-container">
+        <div class="header-container"><img src="https://i.ibb.co/5WxLGJPD/2025-11-15-233559.png" class="header-logo" alt="الشعار"></div>
+        <div class="form-title" style="color: #003f5c;">سجل متابعة غياب الطالب (بدون عذر)</div>
+        <div class="form-body">
+            <div class="section-block" style="display: flex; justify-content: space-between; margin-bottom: 20px;"><div style="width: 60%; white-space: nowrap;">اسم الطالب: <span class="data-field with-dots" style="width: 70%;" id="ghiab_no_studentName"></span></div><div style="width: 35%; white-space: nowrap;">الصف: <span class="data-field with-dots" style="width: 60%;" id="ghiab_no_grade"></span></div></div>
+            <table class="tracking-table"><thead><tr><th style="width: 10%;">الغياب</th><th style="width: 30%;">الإجراء</th><th style="width: 15%;">التاريخ</th><th style="width: 10%;">الحسم</th><th style="width: 15%;">الطالب</th><th style="width: 15%;">ولي الأمر</th></tr></thead><tbody><tr style="height: 50px;"><td class="days-col">٣ أيام</td><td style="text-align: right; padding-right: 5px;">إنذار أول + استدعاء</td><td></td><td></td><td></td><td></td></tr><tr style="height: 50px;"><td class="days-col">٥ أيام</td><td style="text-align: right; padding-right: 5px;">إنذار ثانٍ + تعهد</td><td></td><td></td><td></td><td></td></tr><tr style="height: 50px;"><td class="days-col">١٠ أيام</td><td style="text-align: right; padding-right: 5px;">إنذار ثالث + تحويل</td><td></td><td></td><td></td><td></td></tr><tr style="height: 50px;"><td class="days-col">١٥ يوماً</td><td style="text-align: right; padding-right: 5px;">نقل الطالب لمدرسة أخرى</td><td></td><td></td><td></td><td></td></tr></tbody></table>
+            <table class="footer-table"><tr><td style="width: 100%; text-align: left; padding-left: 30px;"><div style="display: inline-block; text-align: center;"><strong style="display: block; margin-bottom: 0.8em;">مدير المدرسة</strong><div style="white-space: nowrap;">التوقيع: <span class="with-dots" style="min-width: 150px;"></span></div></div></td></tr></table>
+        </div>
+    </div>
+</div>
+
+<div class="print-template" id="form-ghiab_ozr">
+    <div class="page-container">
+        <div class="header-container"><img src="https://i.ibb.co/5WxLGJPD/2025-11-15-233559.png" class="header-logo" alt="الشعار"></div>
+        <div class="form-title">نموذج إجراءات الغياب بعذر</div>
+        <div class="form-body">
+            <div class="section-block" style="display: flex; justify-content: space-between; margin-bottom: 20px;"><div style="width: 60%; white-space: nowrap;">اسم الطالب: <span class="data-field with-dots" style="width: 70%;" id="ghiab_ozr_studentName"></span></div><div style="width: 35%; white-space: nowrap;">الصف: <span class="data-field with-dots" style="width: 60%;" id="ghiab_ozr_grade"></span></div></div>
+            <table class="tracking-table"><thead><tr><th style="width: 10%;">الغياب</th><th style="width: 40%;">الإجراء</th><th style="width: 15%;">التاريخ</th><th style="width: 17%;">الطالب</th><th style="width: 18%;">ولي الأمر</th></tr></thead><tbody><tr style="height: 50px;"><td class="days-col">٣ أيام</td><td style="text-align: right; padding-right: 5px;">تحويل للموجه + خطة علاجية</td><td></td><td></td><td></td></tr><tr style="height: 50px;"><td class="days-col">٥ أيام</td><td style="text-align: right; padding-right: 5px;">لجنة توجيه (دراسة حالة)</td><td></td><td></td><td></td></tr><tr style="height: 50px;"><td class="days-col">١٠ أيام</td><td style="text-align: right; padding-right: 5px;">مخاطبة الجهات (اشتباه إهمال)</td><td></td><td></td><td></td></tr></tbody></table>
+            <table class="footer-table"><tr><td style="width: 100%; text-align: left; padding-left: 30px;"><div style="display: inline-block; text-align: center;"><strong style="display: block; margin-bottom: 0.8em;">مدير المدرسة</strong><div style="white-space: nowrap;">التوقيع: <span class="with-dots" style="min-width: 150px;"></span></div></div></td></tr></table>
+        </div>
+    </div>
+</div>
+
+<div class="print-template" id="form-tahood_hodoor">
+    <div class="page-container">
+        <div class="header-container"><img src="https://i.ibb.co/5WxLGJPD/2025-11-15-233559.png" class="header-logo" alt="الشعار"></div>
+        <div class="form-title">تعهد الالتزام بالحضور</div>
+        <div class="form-body">
+            <div class="section-block align-right">أنا الطالب: <span class="data-field with-dots" style="min-width: 250px;" id="tahood_h_studentName"></span> بالصف: <span class="data-field with-dots" style="min-width: 120px;" id="tahood_h_grade"></span></div>
+            <div class="section-block align-right">أقر بأنني تغيبت عن الحضور للمدرسة بدون عذر لمدة: <span class="data-field with-dots indic-num" style="min-width: 50px;" id="tahood_h_days"></span> أيام وذلك بتاريخ: <span class="data-field with-dots indic-num" style="min-width: 120px;"></span></div>
+            <div class="section-block align-right" style="margin-top: 15px; margin-bottom: 20px; font-weight: bold;">وأتعهد بالالتزام بالخطة التربوية والعلاجية المقدمة لتحسين الحضور، وعدم تكرار الغياب مستقبلاً، وعلى ذلك جرى التوقيع.</div>
+            <table class="footer-table" style="margin-top: 40px;"><tr><td><div class="signature-block"><strong style="display: block; margin-bottom: 0.8em;">الطالب</strong><div style="margin-bottom: 5px; white-space: nowrap;">الاسم: <span class="data-field with-dots" style="min-width: 150px;" id="tahood_h_sig_student"></span></div><div style="white-space: nowrap;">التوقيع: <span class="with-dots" style="min-width: 150px;"></span></div></div></td><td><div class="signature-block"><strong style="display: block; margin-bottom: 0.8em;">ولي أمر</strong><div style="margin-bottom: 5px; white-space: nowrap;">الاسم: <span class="with-dots" style="min-width: 150px;"></span></div><div style="white-space: nowrap;">التوقيع: <span class="with-dots" style="min-width: 150px;"></span></div></div></td><td><div class="signature-block"><strong style="display: block; margin-bottom: 0.8em;">مدير المدرسة</strong><div style="margin-bottom: 5px; white-space: nowrap;">الاسم: <span class="with-dots" style="min-width: 150px;"></span></div><div style="white-space: nowrap;">التوقيع: <span class="with-dots" style="min-width: 150px;"></span></div></div></td></tr></table>
+        </div>
+    </div>
+</div>
+
+<div class="print-template" id="form-group_tahood">
+    <div class="page-container">
+        
+        <div class="header-container">
+            <img src="https://i.ibb.co/5WxLGJPD/2025-11-15-233559.png" class="header-logo" alt="الشعار">
+        </div>
+
+        <div class="form-title">تعهد بعدم غياب والتزام بالحضور</div>
+
+        <div class="form-body">
+            <div class="section-block" style="text-align: center;">
+                التاريخ: <span id="gt_date" class="data-field with-dots indic-num" style="min-width: 120px;"></span>
+            </div>
+
+            <div class="section-block align-right">
+                نتعهد نحن الطلاب الموقعين أدناه، بالالتزام بالحضور وعدم تكرار الغياب بدون عذر، ونتحمل مسؤولية تجاوز الحد المسموح من أيام الغياب وفق لائحة السلوك والمواظبة.
+            </div>
+
+            <table class="tracking-table">
+                <thead>
+                    <tr>
+                        <th style="width: 5%;">م</th>
+                        <th style="width: 22%;">اسم الطالب</th>
+                        <th style="width: 13%;">الصف</th>
+                        <th style="width: 10%;">بدون عذر</th>
+                        <th style="width: 10%;">بعذر</th>
+                        <th style="width: 40%;">توقيع الطالب</th>
+                    </tr>
+                </thead>
+                <tbody id="gt_table_body">
+                    <tr><td class="indic-num">١</td><td></td><td></td><td></td><td></td><td></td></tr>
+                    <tr><td class="indic-num">٢</td><td></td><td></td><td></td><td></td><td></td></tr>
+                    <tr><td class="indic-num">٣</td><td></td><td></td><td></td><td></td><td></td></tr>
+                    <tr><td class="indic-num">٤</td><td></td><td></td><td></td><td></td><td></td></tr>
+                    <tr><td class="indic-num">٥</td><td></td><td></td><td></td><td></td><td></td></tr>
+                    <tr><td class="indic-num">٦</td><td></td><td></td><td></td><td></td><td></td></tr>
+                    <tr><td class="indic-num">٧</td><td></td><td></td><td></td><td></td><td></td></tr>
+                    <tr><td class="indic-num">٨</td><td></td><td></td><td></td><td></td><td></td></tr>
+                </tbody>
+            </table>
+            
+            <table class="footer-table">
+                <tr>
+                    <td style="width: 100%; text-align: left; padding-left: 30px;">
+                        <div style="display: inline-block; text-align: center;">
+                            <strong style="display: block; margin-bottom: 0.5em;">وكيل شؤون الطلاب</strong>
+                            <div style="margin-bottom: 5px; white-space: nowrap;">
+                                الاسم: <span id="gt_deputy" class="with-dots" style="min-width: 150px;"></span>
+                            </div>
+                            <div style="white-space: nowrap;">
+                                التوقيع: <span class="with-dots" style="min-width: 150px;"></span>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+            </table>
+        </div>
+
+    </div>
+</div>
+
+<div class="print-template" id="form-iltizam_madrasi">
+    <div class="page-container">
+        <div class="header-container"><img src="https://i.ibb.co/5WxLGJPD/2025-11-15-233559.png" class="header-logo" alt="الشعار"></div>
+        <div class="form-title">عقد الالتزام المدرسي</div>
+        <div class="form-body">
+            <div class="section-block">إنه في يوم: <span class="data-field with-dots" style="min-width: 80px;" id="iltizam_day"></span> الموافق: <span class="data-field with-dots indic-num" style="min-width: 120px;" id="iltizam_date"></span></div>
+            <div class="section-block align-right">تم الاتفاق بين إدارة المدرسة والطالب: <span class="data-field with-dots" style="min-width: 200px;" id="iltizam_name"></span> بالصف: <span class="data-field with-dots" style="min-width: 80px;" id="iltizam_grade"></span></div>
+            <div class="section-block" style="margin-top: 15px;"><strong>أولاً: تعهد الطالب:</strong><br>أتعهد بالالتزام الكامل بقواعد السلوك والمواظبة، واحترام المعلمين والزملاء، والمحافظة على ممتلكات المدرسة، والمشاركة الفاعلة في الأنشطة الصفية واللاصفية.</div>
+            <div class="section-block" style="margin-top: 15px;"><strong>ثانياً: تعهد ولي الأمر:</strong><br>أتعهد أنا ولي أمر الطالب الموضح اسمه أعلاه، بالتعاون المستمر مع المدرسة لمتابعة سلوك ابني وتحصيله الدراسي، وحضور الاجتماعات التي تدعو إليها المدرسة.</div>
+            <div class="contact-box"><strong>ثالثاً: بيانات التواصل المحدثة (تكتب يدوياً):</strong><br><div style="display: flex; justify-content: space-between; margin-bottom: 5px; margin-top: 5px;"><div style="width: 48%; white-space: nowrap;">اسم ولي الأمر: <span class="with-dots" style="width: 60%;"></span></div><div style="width: 48%; white-space: nowrap;">صلة القرابة: <span class="with-dots" style="width: 60%;"></span></div></div><div style="display: flex; justify-content: space-between;"><div style="width: 48%; white-space: nowrap;">جوال (١): <span class="indic-num with-dots" style="width: 60%;"></span></div><div style="width: 48%; white-space: nowrap;">جوال (٢): <span class="indic-num with-dots" style="width: 60%;"></span></div></div></div>
+            <table class="footer-table" style="margin-top: 40px;"><tr><td><div class="signature-block"><strong style="display: block; margin-bottom: 0.8em;">الطالب</strong><div style="margin-bottom: 5px; white-space: nowrap;">الاسم: <span class="data-field with-dots" style="min-width: 150px;" id="iltizam_student_sign"></span></div><div style="white-space: nowrap;">التوقيع: <span class="with-dots" style="min-width: 150px;"></span></div></div></td><td><div class="signature-block"><strong style="display: block; margin-bottom: 0.8em;">ولي الأمر</strong><div style="margin-bottom: 5px; white-space: nowrap;">الاسم: <span class="with-dots" style="min-width: 150px;"></span></div><div style="white-space: nowrap;">التوقيع: <span class="with-dots" style="min-width: 150px;"></span></div></div></td><td><div class="signature-block"><strong style="display: block; margin-bottom: 0.8em;">إدارة المدرسة</strong><div style="margin-bottom: 5px; white-space: nowrap;">الاسم: <span class="with-dots" style="min-width: 150px;"></span></div><div style="white-space: nowrap;">التوقيع: <span class="with-dots" style="min-width: 150px;"></span></div></div></td></tr></table>
+        </div>
+    </div>
+</div>
+
+<div class="print-template" id="form-rasd_moalem">
+    <div class="page-container">
+        <div class="header-container"><img src="https://i.ibb.co/5WxLGJPD/2025-11-15-233559.png" class="header-logo" alt="الشعار"></div>
+        <div class="form-title">سجل متابعة ورصد مخالفات الطلاب (للمعلم)</div>
+        <div class="form-body">
+            <div class="section-block" style="display: flex; justify-content: space-between; margin-bottom: 20px;"><div style="width: 30%;">المادة: <span class="with-dots" style="width: 70%;"></span></div><div style="width: 30%;">الصف: <span class="with-dots" style="width: 70%;"></span></div><div style="width: 35%;">المعلم: <span class="with-dots" style="width: 70%;"></span></div></div>
+            <table class="tracking-table"><thead><tr><th style="width: 5%;">م</th><th style="width: 25%;">اسم الطالب</th><th style="width: 20%;">المخالفة</th><th style="width: 20%;">الإجراء المتخذ</th><th style="width: 15%;">التاريخ</th><th style="width: 15%;">توقيع الطالب</th></tr></thead><tbody><tr><td class="indic-num">١</td><td></td><td></td><td></td><td></td><td></td></tr><tr><td class="indic-num">٢</td><td></td><td></td><td></td><td></td><td></td></tr><tr><td class="indic-num">٣</td><td></td><td></td><td></td><td></td><td></td></tr><tr><td class="indic-num">٤</td><td></td><td></td><td></td><td></td><td></td></tr><tr><td class="indic-num">٥</td><td></td><td></td><td></td><td></td><td></td></tr><tr><td class="indic-num">٦</td><td></td><td></td><td></td><td></td><td></td></tr><tr><td class="indic-num">٧</td><td></td><td></td><td></td><td></td><td></td></tr><tr><td class="indic-num">٨</td><td></td><td></td><td></td><td></td><td></td></tr></tbody></table>
+            <div class="section-block align-right" style="margin-top: 20px; font-size: 14pt;"><strong>ملاحظة:</strong> يتم تحويل الطالب للموجه الطلابي في حال تكرار المخالفة أو ارتكاب مخالفة تستوجب التدخل.</div>
+        </div>
+    </div>
+</div>
+
+<div class="print-template" id="form-high_risk">
+    <div class="page-container">
+        <div class="header-container"><img src="https://i.ibb.co/5WxLGJPD/2025-11-15-233559.png" class="header-logo" alt="الشعار"></div>
+        <div class="confidential-mark">(سري للغاية وعاجل)</div>
+        <div class="form-title">نموذج إبلاغ عن حالة عالية الخطورة</div>
+        <div class="form-body">
+            <div class="section-block align-right">التاريخ: <span class="data-field with-dots indic-num" style="min-width: 120px;"></span> &nbsp;&nbsp;&nbsp; الوقت: <span class="data-field with-dots indic-num" style="min-width: 60px;"></span></div>
+            <div class="section-block align-right">اسم الطالب: <span class="data-field with-dots" style="min-width: 250px;" id="risk_studentName"></span> الصف: <span class="data-field with-dots" style="min-width: 120px;" id="risk_grade"></span></div>
+            <div class="risk-box"><strong>نوع الخطر:</strong><br><div style="margin-top: 5px; display: flex; flex-wrap: wrap; gap: 15px; font-size: 15pt;"><span><span class="manual-checkbox"></span> حيازة سلاح</span><span><span class="manual-checkbox"></span> مخدرات</span><span><span class="manual-checkbox"></span> تهديد بالعنف</span><span><span class="manual-checkbox"></span> مضاربة جماعية</span><span><span class="manual-checkbox"></span> تحرش</span><span><span class="manual-checkbox"></span> أخرى: <span class="with-dots" style="min-width: 100px;"></span></span></div></div>
+            <div class="section-block"><strong>وصف الواقعة بدقة:</strong><br><span class="with-dots" style="width: 100%; margin-bottom: 5px;"></span><span class="with-dots" style="width: 100%; margin-bottom: 5px;"></span><span class="with-dots" style="width: 100%;"></span></div>
+            <div class="section-block"><strong>الإجراءات الفورية المتخذة:</strong><br><div style="margin-top: 5px; display: flex; flex-direction: column; gap: 5px;"><span><span class="manual-checkbox"></span> التحفظ على المواد الممنوعة (إن وجدت).</span><span><span class="manual-checkbox"></span> استدعاء الدوريات الأمنية / الشرطة.</span><span><span class="manual-checkbox"></span> استدعاء الهلال الأحمر (في حال وجود إصابات).</span><span><span class="manual-checkbox"></span> إبلاغ ولي الأمر فوراً.</span><span><span class="manual-checkbox"></span> أخرى: <span class="with-dots" style="min-width: 200px;"></span></span></div></div>
+            <table class="footer-table"><tr><td style="width: 50%;"><div style="border: 2px dashed #ccc; width: 80px; height: 80px; margin: 0 auto; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12pt;">الختم</div></td><td style="width: 50%;"><div class="signature-block"><strong style="display: block; margin-bottom: 0.8em;">مدير المدرسة</strong><div style="white-space: nowrap;">التوقيع: <span class="with-dots" style="min-width: 150px;"></span></div></div></td></tr></table>
+        </div>
+    </div>
+</div>
+
+<div class="print-template" id="form-eblagh_etha">
+    <div class="page-container">
+        <div class="header-container"><img src="https://i.ibb.co/5WxLGJPD/2025-11-15-233559.png" class="header-logo" alt="الشعار"></div>
+        <div class="confidential-mark">(سري للغاية)</div>
+        <div class="form-title">نموذج رصد وإبلاغ عن حالة إيذاء (حماية)</div>
+        <div class="form-body">
+            <div class="section-block align-right">التاريخ: <span class="data-field with-dots indic-num" style="min-width: 120px;"></span></div>
+            <div class="info-box"><span class="box-title">أولاً: بيانات المُبَلِّغ (المدرسة):</span><div style="display: flex; justify-content: space-between;"><div style="width: 48%; white-space: nowrap;">الاسم: <span class="with-dots" style="width: 60%;"></span></div><div style="width: 48%; white-space: nowrap;">صفته: <span class="with-dots" style="width: 60%;"></span></div></div></div>
+            <div class="info-box"><span class="box-title">ثانياً: بيانات الضحية:</span><div style="display: flex; justify-content: space-between;"><div style="width: 65%; white-space: nowrap;">الاسم: <span class="data-field with-dots" style="width: 70%;" id="eblagh_victim_name"></span></div><div style="width: 30%; white-space: nowrap;">الصف: <span class="data-field with-dots" style="width: 60%;" id="eblagh_grade"></span></div></div></div>
+            <div class="section-block"><strong>ثالثاً: ملخص الحالة:</strong><br><span class="with-dots" style="width: 100%; margin-bottom: 5px;"></span><span class="with-dots" style="width: 100%;"></span></div>
+            <div class="section-block"><strong>رابعاً: الإجراءات المتخذة:</strong><br><div style="margin-top: 5px; margin-bottom: 5px;"><span class="indic-num">١-</span> <span class="with-dots" style="width: 93%;"></span></div><div style="margin-bottom: 5px;"><span class="indic-num">٢-</span> <span class="with-dots" style="width: 93%;"></span></div><div style="margin-bottom: 10px;"><span class="indic-num">٣-</span> <span class="with-dots" style="width: 93%;"></span></div><div style="margin-top: 5px;"><span style="font-weight: bold;">تم التواصل مع مركز البلاغات 1919؟</span> <span style="margin-right: 20px;"><span class="manual-checkbox"></span> نعم (رقم البلاغ: <span class="indic-num with-dots" style="min-width: 80px;"></span>)</span><span style="margin-right: 20px;"><span class="manual-checkbox"></span> لا</span></div></div>
+            <table class="footer-table"><tr><td style="width: 33%;"><div style="border: 2px dashed #ccc; width: 80px; height: 80px; margin: 0 auto; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12pt;">الختم</div></td><td style="width: 33%;"><div class="signature-block"><strong style="display: block; margin-bottom: 0.8em;">الموجه الطلابي</strong><div style="white-space: nowrap;">التوقيع: <span class="with-dots" style="min-width: 150px;"></span></div></div></td><td style="width: 33%;"><div class="signature-block"><strong style="display: block; margin-bottom: 0.8em;">مدير المدرسة</strong><div style="white-space: nowrap;">التوقيع: <span class="with-dots" style="min-width: 150px;"></span></div></div></td></tr></table>
+        </div>
+    </div>
+</div>
+
+<div class="print-template" id="form-khota_tadeel">
+    <div style="padding: 8mm 15mm; font-family: 'Traditional Arabic', 'Amiri', serif; font-size: 15pt; line-height: 1.1;">
+        <div style="text-align: center; border-bottom: 2px solid #000; padding-bottom: 2px; margin-bottom: 3px;"><img src="https://i.ibb.co/5WxLGJPD/2025-11-15-233559.png" style="height: 60px;" alt="الشعار"></div>
+        <div style="text-align: center; font-size: 16pt; font-weight: bold; margin-top: 2px; margin-bottom: 4px;">نموذج خطة تعديل السلوك</div>
+        <div style="background-color: #eee; padding: 2px 8px; border: 1px solid #000; font-size: 13pt; font-weight: bold; margin-bottom: 2px; text-decoration: underline;">أولاً: البيانات الأولية:</div>
+        <div style="margin-bottom: 1mm;">اسم الطالب: <span class="data-field with-dots" style="min-width: 180px; display: inline-block; border-bottom: 1px dotted #999; text-align: center;" id="khota_studentName"></span> الصف: <span class="data-field with-dots" style="min-width: 80px; display: inline-block; border-bottom: 1px dotted #999; text-align: center;" id="khota_grade"></span> الفصل: <span class="data-field with-dots" style="min-width: 40px; display: inline-block; border-bottom: 1px dotted #999; text-align: center;" id="khota_class"></span></div>
+        <div style="margin-bottom: 2mm;">تاريخ الميلاد: <span style="min-width: 70px; display: inline-block; border-bottom: 1px dotted #999; text-align: center;"></span> العمر: <span style="min-width: 35px; display: inline-block; border-bottom: 1px dotted #999; text-align: center;"></span> تاريخ البداية: <span style="min-width: 70px; display: inline-block; border-bottom: 1px dotted #999; text-align: center;"></span> تاريخ النهاية: <span style="min-width: 70px; display: inline-block; border-bottom: 1px dotted #999; text-align: center;"></span></div>
+        <div style="background-color: #eee; padding: 2px 8px; border: 1px solid #000; font-size: 13pt; font-weight: bold; margin-top: 3px; margin-bottom: 2px; text-decoration: underline;">ثانياً: تحديد المشكلة السلوكية:</div>
+        <div style="margin-bottom: 1mm;">المشكلة السلوكية: <span style="min-width: 200px; display: inline-block; border-bottom: 1px dotted #999; text-align: center;"></span> درجتها: <span style="min-width: 40px; display: inline-block; border-bottom: 1px dotted #999; text-align: center;"></span></div>
+        <div style="margin-bottom: 1mm;">وصف المشكلة السلوكية: <span style="width: 65%; display: inline-block; border-bottom: 1px dotted #999; text-align: center;"></span></div>
+        <div style="margin-bottom: 0mm;">المظاهر السلوكية التي تبدو عند الطالب:</div>
+        <div style="margin-bottom: 0mm; margin-right: 10px;"><span style="font-weight: bold;">١-</span> <span style="width: 92%; display: inline-block; border-bottom: 1px dotted #999;"></span></div>
+        <div style="margin-bottom: 1mm; margin-right: 10px;"><span style="font-weight: bold;">٢-</span> <span style="width: 92%; display: inline-block; border-bottom: 1px dotted #999;"></span></div>
+        <div style="background-color: #eee; padding: 2px 8px; border: 1px solid #000; font-size: 13pt; font-weight: bold; margin-top: 3px; margin-bottom: 2px; text-decoration: underline;">ثالثاً: قياس شدة أو تكرار السلوك:</div>
+        <table style="width: 100%; border-collapse: collapse; font-size: 11pt; margin-top: 1px; margin-bottom: 3px;"><thead><tr><th rowspan="2" style="border: 1px solid #000; padding: 1px; width: 8%; background-color: #f2f2f2;">اليوم</th><th rowspan="2" style="border: 1px solid #000; padding: 1px; width: 14%; background-color: #f2f2f2;">التاريخ</th><th rowspan="2" style="border: 1px solid #000; padding: 1px; width: 14%; background-color: #f2f2f2;">فترة الملاحظة</th><th colspan="5" style="border: 1px solid #000; padding: 1px; background-color: #f2f2f2;">التكرار</th><th rowspan="2" style="border: 1px solid #000; padding: 1px; width: 10%; background-color: #f2f2f2;">المجموع</th></tr><tr><th style="border: 1px solid #000; padding: 1px; background-color: #f2f2f2;">١</th><th style="border: 1px solid #000; padding: 1px; background-color: #f2f2f2;">٢</th><th style="border: 1px solid #000; padding: 1px; background-color: #f2f2f2;">٣</th><th style="border: 1px solid #000; padding: 1px; background-color: #f2f2f2;">٤</th><th style="border: 1px solid #000; padding: 1px; background-color: #f2f2f2;">٥</th></tr></thead><tbody><tr style="height: 14px;"><td style="border: 1px solid #000; text-align: center;">١</td><td style="border: 1px solid #000;"></td><td style="border: 1px solid #000;"></td><td style="border: 1px solid #000;"></td><td style="border: 1px solid #000;"></td><td style="border: 1px solid #000;"></td><td style="border: 1px solid #000;"></td><td style="border: 1px solid #000;"></td><td style="border: 1px solid #000;"></td></tr><tr style="height: 14px;"><td style="border: 1px solid #000; text-align: center;">٢</td><td style="border: 1px solid #000;"></td><td style="border: 1px solid #000;"></td><td style="border: 1px solid #000;"></td><td style="border: 1px solid #000;"></td><td style="border: 1px solid #000;"></td><td style="border: 1px solid #000;"></td><td style="border: 1px solid #000;"></td><td style="border: 1px solid #000;"></td></tr><tr style="height: 14px;"><td style="border: 1px solid #000; text-align: center;">٣</td><td style="border: 1px solid #000;"></td><td style="border: 1px solid #000;"></td><td style="border: 1px solid #000;"></td><td style="border: 1px solid #000;"></td><td style="border: 1px solid #000;"></td><td style="border: 1px solid #000;"></td><td style="border: 1px solid #000;"></td><td style="border: 1px solid #000;"></td></tr><tr style="height: 14px;"><td style="border: 1px solid #000; text-align: center;">٤</td><td style="border: 1px solid #000;"></td><td style="border: 1px solid #000;"></td><td style="border: 1px solid #000;"></td><td style="border: 1px solid #000;"></td><td style="border: 1px solid #000;"></td><td style="border: 1px solid #000;"></td><td style="border: 1px solid #000;"></td><td style="border: 1px solid #000;"></td></tr><tr style="height: 14px;"><td style="border: 1px solid #000; text-align: center;">٥</td><td style="border: 1px solid #000;"></td><td style="border: 1px solid #000;"></td><td style="border: 1px solid #000;"></td><td style="border: 1px solid #000;"></td><td style="border: 1px solid #000;"></td><td style="border: 1px solid #000;"></td><td style="border: 1px solid #000;"></td><td style="border: 1px solid #000;"></td></tr></tbody></table>
+        <div style="background-color: #eee; padding: 2px 8px; border: 1px solid #000; font-size: 13pt; font-weight: bold; margin-top: 3px; margin-bottom: 2px; text-decoration: underline;">رابعاً: تحديد وظيفة السلوك (التحليل):</div>
+        <div style="margin-bottom: 1mm;"><div style="font-weight: bold;">المثيرات القبلية: <span style="font-weight: normal;">(الأسباب التي تسبق السلوك غير المرغوب):</span></div><div style="width: 100%; border-bottom: 1px dotted #999; height: 18px;"></div></div>
+        <div style="margin-bottom: 1mm;"><div style="font-weight: bold;">المثيرات البعدية: <span style="font-weight: normal;">(ماذا يحدث بعد السلوك؟):</span></div><div style="width: 100%; border-bottom: 1px dotted #999; height: 18px;"></div></div>
+        <div style="margin-bottom: 1mm;"><div style="font-weight: bold;">ما الذي يحققه الطالب من خلال السلوك؟</div><div style="width: 100%; border-bottom: 1px dotted #999; height: 18px;"></div></div>
+        <div style="margin-bottom: 0;"><div style="font-weight: bold;">الإجراءات السابقة المستخدمة للحد من السلوك:</div><div style="width: 100%; border-bottom: 1px dotted #999; height: 18px;"></div></div>
+    </div>
+    <div style="page-break-before: always;"></div>
+    <div style="padding: 8mm 15mm; font-family: 'Traditional Arabic', 'Amiri', serif; font-size: 15pt; line-height: 1.1;">
+        <div style="text-align: center; border-bottom: 2px solid #000; padding-bottom: 2px; margin-bottom: 3px;"><img src="https://i.ibb.co/5WxLGJPD/2025-11-15-233559.png" style="height: 60px;" alt="الشعار"></div>
+        <div style="text-align: center; font-size: 16pt; font-weight: bold; margin-top: 2px; margin-bottom: 4px;">تابع: خطة تعديل السلوك</div>
+        <div style="background-color: #eee; padding: 2px 8px; border: 1px solid #000; font-size: 13pt; font-weight: bold; margin-bottom: 2px; text-decoration: underline;">خامساً: تصميم خطة تعديل السلوك:</div>
+        <div style="margin-bottom: 1mm;"><div style="font-weight: bold;">تعريف السلوك المرغوب إكسابه للطالب إجرائياً:</div><div style="width: 100%; border-bottom: 1px dotted #999; height: 18px;"></div></div>
+        <div style="margin-bottom: 1mm;"><div style="font-weight: bold;">الإجراءات المستخدمة للحد من السلوك غير المرغوب وتحقيق السلوك المرغوب:</div></div>
+        <div style="margin-right: 10px; line-height: 1.3;">
+            <div style="margin-bottom: 0mm;"><span style="font-weight: bold;">١-</span> الإجراء الأول: <span style="width: 70%; display: inline-block; border-bottom: 1px dotted #999;"></span></div>
+            <div style="margin-bottom: 0mm;"><span style="font-weight: bold;">٢-</span> الإجراء الثاني: <span style="width: 70%; display: inline-block; border-bottom: 1px dotted #999;"></span></div>
+            <div style="margin-bottom: 0mm;"><span style="font-weight: bold;">٣-</span> الإجراء الثالث: <span style="width: 70%; display: inline-block; border-bottom: 1px dotted #999;"></span></div>
+            <div style="margin-bottom: 0mm;"><span style="font-weight: bold;">٤-</span> الإجراء الرابع: <span style="width: 70%; display: inline-block; border-bottom: 1px dotted #999;"></span></div>
+            <div style="margin-bottom: 0mm;"><span style="font-weight: bold;">٥-</span> الإجراء الخامس: <span style="width: 70%; display: inline-block; border-bottom: 1px dotted #999;"></span></div>
+            <div style="margin-bottom: 1mm;"><span style="font-weight: bold;">٦-</span> الإجراء السادس: <span style="width: 70%; display: inline-block; border-bottom: 1px dotted #999;"></span></div>
+        </div>
+        <div style="margin-bottom: 1px; font-weight: bold;">متابعة السلوك (بعد التنفيذ):</div>
+        <table style="width: 100%; border-collapse: collapse; font-size: 11pt; margin-top: 1px; margin-bottom: 3px;"><thead><tr><th rowspan="2" style="border: 1px solid #000; padding: 1px; width: 8%; background-color: #f2f2f2;">اليوم</th><th rowspan="2" style="border: 1px solid #000; padding: 1px; width: 14%; background-color: #f2f2f2;">التاريخ</th><th rowspan="2" style="border: 1px solid #000; padding: 1px; width: 14%; background-color: #f2f2f2;">فترة الملاحظة</th><th colspan="5" style="border: 1px solid #000; padding: 1px; background-color: #f2f2f2;">التكرار</th><th rowspan="2" style="border: 1px solid #000; padding: 1px; width: 10%; background-color: #f2f2f2;">المجموع</th></tr><tr><th style="border: 1px solid #000; padding: 1px; background-color: #f2f2f2;">١</th><th style="border: 1px solid #000; padding: 1px; background-color: #f2f2f2;">٢</th><th style="border: 1px solid #000; padding: 1px; background-color: #f2f2f2;">٣</th><th style="border: 1px solid #000; padding: 1px; background-color: #f2f2f2;">٤</th><th style="border: 1px solid #000; padding: 1px; background-color: #f2f2f2;">٥</th></tr></thead><tbody><tr style="height: 14px;"><td style="border: 1px solid #000; text-align: center;">١</td><td style="border: 1px solid #000;"></td><td style="border: 1px solid #000;"></td><td style="border: 1px solid #000;"></td><td style="border: 1px solid #000;"></td><td style="border: 1px solid #000;"></td><td style="border: 1px solid #000;"></td><td style="border: 1px solid #000;"></td><td style="border: 1px solid #000;"></td></tr><tr style="height: 14px;"><td style="border: 1px solid #000; text-align: center;">٢</td><td style="border: 1px solid #000;"></td><td style="border: 1px solid #000;"></td><td style="border: 1px solid #000;"></td><td style="border: 1px solid #000;"></td><td style="border: 1px solid #000;"></td><td style="border: 1px solid #000;"></td><td style="border: 1px solid #000;"></td><td style="border: 1px solid #000;"></td></tr><tr style="height: 14px;"><td style="border: 1px solid #000; text-align: center;">٣</td><td style="border: 1px solid #000;"></td><td style="border: 1px solid #000;"></td><td style="border: 1px solid #000;"></td><td style="border: 1px solid #000;"></td><td style="border: 1px solid #000;"></td><td style="border: 1px solid #000;"></td><td style="border: 1px solid #000;"></td><td style="border: 1px solid #000;"></td></tr><tr style="height: 14px;"><td style="border: 1px solid #000; text-align: center;">٤</td><td style="border: 1px solid #000;"></td><td style="border: 1px solid #000;"></td><td style="border: 1px solid #000;"></td><td style="border: 1px solid #000;"></td><td style="border: 1px solid #000;"></td><td style="border: 1px solid #000;"></td><td style="border: 1px solid #000;"></td><td style="border: 1px solid #000;"></td></tr><tr style="height: 14px;"><td style="border: 1px solid #000; text-align: center;">٥</td><td style="border: 1px solid #000;"></td><td style="border: 1px solid #000;"></td><td style="border: 1px solid #000;"></td><td style="border: 1px solid #000;"></td><td style="border: 1px solid #000;"></td><td style="border: 1px solid #000;"></td><td style="border: 1px solid #000;"></td><td style="border: 1px solid #000;"></td></tr></tbody></table>
+        <div style="background-color: #eee; padding: 2px 8px; border: 1px solid #000; font-size: 13pt; font-weight: bold; margin-top: 3px; margin-bottom: 2px; text-decoration: underline;">سادساً: تقييم فاعلية الخطة أو البرنامج:</div>
+        <div style="margin-bottom: 0mm;">رأي وكيل / وكيلة المدرسة: <span style="width: 65%; display: inline-block; border-bottom: 1px dotted #999;"></span></div>
+        <div style="margin-bottom: 0mm;">رأي معلم / معلمة الفصل: <span style="width: 67%; display: inline-block; border-bottom: 1px dotted #999;"></span></div>
+        <div style="margin-bottom: 2mm;">رأي ولي الأمر: <span style="width: 75%; display: inline-block; border-bottom: 1px dotted #999;"></span></div>
+        <div style="margin-bottom: 1mm; font-weight: bold;">القائم بتعديل السلوك (معلم / موجه طلابي):</div>
+        <div style="margin-right: 20px; line-height: 1.3;">
+            <div style="margin-bottom: 0mm;">الاسم: <span style="width: 150px; display: inline-block; border-bottom: 1px dotted #999;"></span></div>
+            <div style="margin-bottom: 0mm;">التوقيع: <span style="width: 150px; display: inline-block; border-bottom: 1px dotted #999;"></span></div>
+            <div>التاريخ: <span style="width: 100px; display: inline-block; border-bottom: 1px dotted #999;"></span></div>
+        </div>
+    </div>
+</div>
+
+<div class="print-template" id="form-ehalat_absence">
+    <div class="page-container referral-container">
+        
+        <div class="header-container">
+            <img src="https://i.ibb.co/5WxLGJPD/2025-11-15-233559.png" class="header-logo" alt="الشعار">
+        </div>
+
+        <div class="confidential-mark">(سري)</div>
+
+        <div class="form-title">نموذج إحالة طالب إلى الموجه الطلابي<br><span style="font-size:14pt; font-weight:normal;">(غياب وتأخر دراسي)</span></div>
+
+        <div class="form-body">
+            <div class="section-block"><strong>المكرم الموجه الطلابي بالمدرسة .. وفقكم الله</strong></div>
+            <div class="section-block">السلام عليكم ورحمة الله وبركاته،،</div>
+            
+            <div class="section-block align-right">
+                نحيل إليكم الطالب: <span class="data-field with-dots" style="min-width: 250px;" id="ehala_abs_studentName"></span> 
+                بالصف: <span class="data-field with-dots" style="min-width: 120px;" id="ehala_abs_grade"></span>
+            </div>
+
+            <div class="section-block align-right" style="margin-top: 10px;">
+                <strong>سبب الإحالة:</strong> تكرار غياب الطالب وتأثيره السلبي على مستواه الدراسي والسلوكي.
+            </div>
+
+            <div style="border: 2px solid #ccc; padding: 10px; margin: 15px 0; background-color: #f9f9f9; display: flex; justify-content: space-around;">
+                <div>
+                    <strong>غياب بدون عذر:</strong> 
+                    <span class="data-field indic-num" style="font-size: 16pt; color: #c0392b;" id="ehala_abs_unexcused"></span> أيام
+                </div>
+                <div style="border-right: 1px solid #ccc;"></div>
+                <div>
+                    <strong>غياب بعذر:</strong> 
+                    <span class="data-field indic-num" style="font-size: 16pt; color: #27ae60;" id="ehala_abs_excused"></span> أيام
+                </div>
+            </div>
+
+            <div class="section-block" style="margin-top: 15px;">
+                نأمل منكم دراسة حالة الطالب، واتخاذ الإجراءات التربوية والعلاجية المناسبة، وإفادتنا بما تم.
+            </div>
+            
+            <table class="footer-table">
+                <tr>
+                    <td>
+                        <div style="border: 2px dashed #ccc; width: 80px; height: 80px; margin: 0 auto; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12pt;">الختم</div>
+                    </td>
+                    <td></td>
+                    <td>
+                        <div class="signature-block">
+                            <strong style="display: block; margin-bottom: 0.8em;">وكيل شؤون الطلاب</strong>
+                            <div style="margin-bottom: 5px; white-space: nowrap;">الاسم: <span class="with-dots" style="min-width: 200px;"></span></div>
+                            <div style="white-space: nowrap;">التوقيع: <span class="with-dots" style="min-width: 200px;"></span></div>
+                        </div>
+                    </td>
+                </tr>
+            </table>
+
+            <div class="internal-section">
+                <div class="section-block" style="font-weight: bold; text-decoration: underline;">إفادة الموجه الطلابي (للاستخدام الداخلي):</div>
+                <div class="section-block">تم الاطلاع على حالة الطالب واتخاذ الإجراءات التالية:</div>
+                <div class="feedback-box" style="height: 120px;"></div>
+                
+                <div style="display: flex; justify-content: space-between; margin-top: 20px; font-weight: bold;">
+                    <div style="white-space: nowrap;">الاسم: <span class="with-dots" style="min-width: 180px;"></span></div>
+                    <div style="white-space: nowrap;">التوقيع: <span class="with-dots" style="min-width: 180px;"></span></div>
+                    <div style="white-space: nowrap;">التاريخ: <span class="indic-num with-dots" style="min-width: 120px;"></span></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>
+<!-- ============================================================ -->
+<!-- نهاية جميع النماذج -->
+<!-- ============================================================ -->
