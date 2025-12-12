@@ -1,152 +1,437 @@
 <script>
     // =================================================================
-    // 1. رسم الصفحة (Rendering)
+    // نظام النماذج العامة - الإصدار المطور
+    // =================================================================
+    
+    let gf_studentViolations = []; // لتخزين مخالفات الطالب المختار
+    
+    // =================================================================
+    // 1. رسم الصفحة الرئيسية (Rendering)
     // =================================================================
     function renderGeneralFormsPage() {
         const main = document.getElementById('main-content');
         main.innerHTML = `
             <div class="max-w-6xl mx-auto">
-                <h2 class="text-2xl font-bold text-gray-800 mb-6">النماذج العامة والإدارية</h2>
-                
-                <!-- قسم اختيار الطالب -->
-                <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200 mb-8">
-                    <div class="flex items-center gap-2 mb-4 text-gray-500 text-sm">
-                        <span class="material-symbols-outlined">info</span>
-                        <span>حدد الطالب لتعبئة بياناته، أو اترك الخانات فارغة لطباعة النماذج العامة (مثل سجل المعلم).</span>
+                <div class="flex items-center gap-3 mb-6">
+                    <div class="p-3 bg-orange-100 rounded-2xl">
+                        <span class="material-symbols-outlined text-orange-600 text-3xl">folder_open</span>
                     </div>
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div><label class="block text-sm mb-1">الصف</label><select id="gf-grade" onchange="gfPopulateClasses()" class="w-full border-gray-300 rounded-lg"><option value="">اختر الصف</option></select></div>
-                        <div><label class="block text-sm mb-1">الفصل</label><select id="gf-class" onchange="gfPopulateStudents()" disabled class="w-full border-gray-300 rounded-lg"><option value="">اختر الفصل</option></select></div>
-                        <div><label class="block text-sm mb-1">الطالب</label><select id="gf-student" class="w-full border-gray-300 rounded-lg" disabled><option value="">اختر الطالب</option></select></div>
+                    <div>
+                        <h2 class="text-2xl font-bold text-gray-800">النماذج العامة والإدارية</h2>
+                        <p class="text-sm text-gray-500">اختر النموذج المطلوب للطباعة</p>
                     </div>
                 </div>
                 
                 <!-- 1. المواظبة والغياب -->
-                <h3 class="font-bold text-gray-700 mb-3">المواظبة والغياب:</h3>
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
-                    ${createGeneralFormCard('ghiab_bidon_ozr', 'متابعة غياب (بدون عذر)', 'سجل تدرج الإجراءات للملف', 'text-red-600')}
-                    ${createGeneralFormCard('ghiab_ozr', 'إجراءات غياب (بعذر)', 'توثيق الأعذار المقبولة', 'text-green-600')}
-                    ${createGeneralFormCard('tahood_hodoor', 'تعهد التزام بالحضور', 'عند تجاوز الغياب للحد المسموح', 'text-orange-600')}
+                <div class="mb-8">
+                    <h3 class="font-bold text-gray-700 mb-3 flex items-center gap-2">
+                        <span class="material-symbols-outlined text-red-500">event_busy</span>
+                        المواظبة والغياب
+                    </h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        ${createFormCard('ghiab_bidon_ozr', 'متابعة غياب (بدون عذر)', 'سجل تدرج الإجراءات للملف', 'text-red-600', 'event_busy', true)}
+                        ${createFormCard('ghiab_ozr', 'إجراءات غياب (بعذر)', 'توثيق الأعذار المقبولة', 'text-green-600', 'event_available', true)}
+                        ${createFormCard('tahood_hodoor', 'تعهد التزام بالحضور', 'عند تجاوز الغياب للحد المسموح', 'text-orange-600', 'edit_document', true)}
+                    </div>
                 </div>
 
-                <!-- 2. الإجراءات السلوكية والفردية -->
-                <h3 class="font-bold text-gray-700 mb-3">نماذج الإجراءات السلوكية:</h3>
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
-                    ${createGeneralFormCard('iltizam_madrasi', 'عقد التزام مدرسي', 'يوقع بداية العام أو عند العودة', 'text-indigo-600')}
-                    ${createGeneralFormCard('tawid_darajat', 'فرص تعويض', 'لتحسين الدرجات المحسومة', 'text-indigo-600')}
-                    ${createGeneralFormCard('rasd_tamayuz', 'رصد سلوك متميز', 'سجل الطالب للإنجازات', 'text-green-600')}
-                    ${createGeneralFormCard('dawat_wali_amr', 'دعوة ولي أمر', 'طلب حضور للمدرسة', 'text-gray-800')}
-                    ${createGeneralFormCard('rasd_slooki', 'سجل مخالفات (للملف)', 'يوضع في ملف الطالب', 'text-gray-800')}
-                    ${createGeneralFormCard('khota_tadeel', 'خطة تعديل سلوك', 'للموجه الطلابي', 'text-teal-600')}
+                <!-- 2. الإجراءات السلوكية -->
+                <div class="mb-8">
+                    <h3 class="font-bold text-gray-700 mb-3 flex items-center gap-2">
+                        <span class="material-symbols-outlined text-indigo-500">gavel</span>
+                        نماذج الإجراءات السلوكية
+                    </h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        ${createFormCard('iltizam_madrasi', 'عقد التزام مدرسي', 'يوقع بداية العام أو عند العودة', 'text-indigo-600', 'handshake', true)}
+                        ${createFormCard('tawid_darajat', 'فرص تعويض الدرجات', 'لتحسين الدرجات المحسومة', 'text-purple-600', 'trending_up', true, true)}
+                        ${createFormCard('rasd_tamayuz', 'رصد سلوك متميز', 'سجل الطالب للإنجازات', 'text-emerald-600', 'star', true)}
+                        ${createFormCard('dawat_wali_amr', 'دعوة ولي أمر', 'طلب حضور للمدرسة', 'text-gray-700', 'mail', true)}
+                        ${createFormCard('rasd_slooki', 'سجل مخالفات (للملف)', 'يوضع في ملف الطالب', 'text-gray-700', 'folder_shared', true)}
+                        ${createFormCard('khota_tadeel', 'خطة تعديل سلوك', 'للموجه الطلابي', 'text-teal-600', 'psychology', true)}
+                    </div>
                 </div>
 
-                <!-- 3. النماذج الميدانية (تطبع فارغة) -->
-                <h3 class="font-bold text-gray-700 mb-3">نماذج فارغة للتوزيع (للمعلمين):</h3>
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
-                    ${createGeneralFormCard('rasd_moalem', 'سجل متابعة معلم', 'نموذج فارغ يوزع على المعلمين', 'text-purple-600')}
+                <!-- 3. النماذج الفارغة -->
+                <div class="mb-8">
+                    <h3 class="font-bold text-gray-700 mb-3 flex items-center gap-2">
+                        <span class="material-symbols-outlined text-purple-500">content_paste</span>
+                        نماذج فارغة للتوزيع
+                    </h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        ${createFormCard('rasd_moalem', 'سجل متابعة معلم', 'نموذج فارغ يوزع على المعلمين', 'text-purple-600', 'person_book', false)}
+                    </div>
                 </div>
 
-                <!-- 4. النماذج السرية والطارئة -->
-                <h3 class="font-bold text-gray-700 mb-3">النماذج السرية والطارئة:</h3>
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    ${createGeneralFormCard('eblagh_etha', 'إبلاغ عن إيذاء', 'خاص بمركز البلاغات 1919', 'text-red-600')}
-                    ${createGeneralFormCard('high_risk', 'حالة عالية الخطورة', 'للحالات الطارئة جداً', 'text-red-600')}
+                <!-- 4. النماذج السرية -->
+                <div class="mb-8">
+                    <h3 class="font-bold text-gray-700 mb-3 flex items-center gap-2">
+                        <span class="material-symbols-outlined text-red-600">warning</span>
+                        النماذج السرية والطارئة
+                    </h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        ${createFormCard('eblagh_etha', 'إبلاغ عن إيذاء', 'خاص بمركز البلاغات 1919', 'text-red-600', 'report', true)}
+                        ${createFormCard('high_risk', 'حالة عالية الخطورة', 'للحالات الطارئة جداً', 'text-red-700', 'emergency', true)}
+                    </div>
+                </div>
+            </div>
+
+            <!-- ======================================== -->
+            <!-- نافذة اختيار الطالب (Popup) -->
+            <!-- ======================================== -->
+            <div id="gf-student-modal" class="fixed inset-0 bg-gray-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+                <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden transform transition-all scale-100">
+                    
+                    <!-- رأس النافذة -->
+                    <div class="px-6 py-4 bg-gradient-to-l from-indigo-50 to-purple-50 border-b border-gray-100">
+                        <div class="flex justify-between items-center">
+                            <div class="flex items-center gap-3">
+                                <div class="p-2 bg-indigo-100 rounded-xl">
+                                    <span class="material-symbols-outlined text-indigo-600" id="gf-modal-icon">description</span>
+                                </div>
+                                <div>
+                                    <h3 class="text-lg font-bold text-gray-800" id="gf-modal-title">اختيار الطالب</h3>
+                                    <p class="text-xs text-gray-500" id="gf-modal-subtitle">حدد بيانات الطالب للطباعة</p>
+                                </div>
+                            </div>
+                            <button onclick="closeGfModal()" class="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+                                <span class="material-symbols-outlined text-gray-400">close</span>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- محتوى النافذة -->
+                    <div class="p-6 space-y-4">
+                        
+                        <!-- الصف -->
+                        <div>
+                            <label class="block text-sm font-bold text-gray-600 mb-2">الصف الدراسي</label>
+                            <select id="gf-modal-grade" onchange="gfModalPopulateClasses()" 
+                                class="w-full h-12 px-4 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all">
+                                <option value="">اختر الصف</option>
+                            </select>
+                        </div>
+                        
+                        <!-- الفصل -->
+                        <div>
+                            <label class="block text-sm font-bold text-gray-600 mb-2">الفصل</label>
+                            <select id="gf-modal-class" onchange="gfModalPopulateStudents()" disabled
+                                class="w-full h-12 px-4 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 disabled:opacity-50 transition-all">
+                                <option value="">اختر الفصل</option>
+                            </select>
+                        </div>
+                        
+                        <!-- الطالب -->
+                        <div>
+                            <label class="block text-sm font-bold text-gray-600 mb-2">اسم الطالب</label>
+                            <select id="gf-modal-student" onchange="gfModalOnStudentSelected()" disabled
+                                class="w-full h-12 px-4 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 disabled:opacity-50 transition-all font-bold">
+                                <option value="">اختر الطالب</option>
+                            </select>
+                        </div>
+                        
+                        <!-- قسم اختيار المخالفة (يظهر فقط للنماذج التي تحتاج مخالفة) -->
+                        <div id="gf-violation-section" class="hidden border-t border-gray-100 pt-4 mt-4">
+                            <label class="block text-sm font-bold text-gray-600 mb-2">
+                                <span class="material-symbols-outlined text-orange-500 text-sm align-middle">warning</span>
+                                اختر المخالفة المراد التعويض عنها
+                            </label>
+                            <select id="gf-modal-violation" 
+                                class="w-full h-12 px-4 bg-orange-50 border border-orange-200 rounded-xl focus:ring-2 focus:ring-orange-500 transition-all">
+                                <option value="">-- اختر المخالفة --</option>
+                            </select>
+                            <p class="text-xs text-gray-400 mt-2" id="gf-violation-hint">سيتم تعبئة بيانات المخالفة تلقائياً في النموذج</p>
+                        </div>
+                        
+                    </div>
+                    
+                    <!-- أزرار النافذة -->
+                    <div class="px-6 py-4 bg-gray-50 border-t border-gray-100 flex justify-end gap-3">
+                        <button onclick="closeGfModal()" class="px-5 py-2.5 text-gray-600 hover:bg-gray-200 rounded-xl font-bold transition-all">
+                            إلغاء
+                        </button>
+                        <button onclick="gfModalSubmit()" id="gf-modal-submit-btn"
+                            class="px-6 py-2.5 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 shadow-lg shadow-indigo-200 transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                            <span class="material-symbols-outlined">print</span>
+                            طباعة النموذج
+                        </button>
+                    </div>
                 </div>
             </div>
         `;
-        
-        const select = document.getElementById('gf-grade');
-        const grades = [...new Set(APP_DATA.students.filter(s => s['المرحلة'] === currentStage).map(s => s['الصف']))].sort();
-        grades.forEach(g => select.add(new Option(g, g)));
     }
 
-    function createGeneralFormCard(formId, title, desc, colorClass = 'text-gray-800') {
-        return `<div class="form-card bg-white p-5 rounded-xl cursor-pointer border hover:border-indigo-300 transition-all" onclick="printGeneralForm('${formId}')">
+    // =================================================================
+    // 2. إنشاء بطاقة النموذج
+    // =================================================================
+    function createFormCard(formId, title, desc, colorClass, icon, requiresStudent, requiresViolation = false) {
+        const studentAttr = requiresStudent ? 'true' : 'false';
+        const violationAttr = requiresViolation ? 'true' : 'false';
+        
+        return `
+            <div class="form-card bg-white p-5 rounded-xl cursor-pointer border border-gray-200 hover:border-indigo-300 hover:shadow-lg transition-all group"
+                 onclick="openGfModal('${formId}', '${title}', ${studentAttr}, ${violationAttr})"
+                 data-form-id="${formId}">
                 <div class="flex items-center gap-3 mb-2">
-                    <div class="p-2 bg-gray-50 rounded-full"><span class="material-symbols-outlined ${colorClass}">description</span></div>
+                    <div class="p-2 bg-gray-50 rounded-xl group-hover:bg-indigo-50 transition-colors">
+                        <span class="material-symbols-outlined ${colorClass}">${icon}</span>
+                    </div>
                     <h3 class="font-bold ${colorClass}">${title}</h3>
                 </div>
                 <p class="text-sm text-gray-500">${desc}</p>
-            </div>`;
+            </div>
+        `;
     }
 
     // =================================================================
-    // 2. دوال التفاعل (Interactivity)
+    // 3. فتح نافذة اختيار الطالب
     // =================================================================
-    function gfPopulateClasses() {
-        const grade = document.getElementById('gf-grade').value;
-        const select = document.getElementById('gf-class');
-        select.disabled = !grade; select.innerHTML = '<option value="">اختر</option>';
-        if(grade) {
-            const classes = [...new Set(APP_DATA.students.filter(s => s['المرحلة'] === currentStage && s['الصف'] === grade).map(s => s['الفصل']))].sort();
-            classes.forEach(c => select.add(new Option(c, c)));
-        }
-    }
+    let gf_currentFormId = '';
+    let gf_currentFormTitle = '';
+    let gf_requiresViolation = false;
 
-    function gfPopulateStudents() {
-        const grade = document.getElementById('gf-grade').value;
-        const cls = document.getElementById('gf-class').value;
-        const select = document.getElementById('gf-student');
-        select.disabled = !cls; select.innerHTML = '<option value="">اختر الطالب</option>';
-        if(cls) {
-            const students = APP_DATA.students.filter(s => s['المرحلة'] === currentStage && s['الصف'] === grade && s['الفصل'] == cls);
-            students.forEach(s => select.add(new Option(s['اسم الطالب'], s['اسم الطالب'])));
-        }
-    }
-
-  // =================================================================
-    // 3. أمر الطباعة (محدث لدعم جلب السجل)
-    // =================================================================
-    function printGeneralForm(formId) {
-        const studentName = document.getElementById('gf-student').value;
-        const blankForms = ['rasd_moalem']; 
-
-        if (!blankForms.includes(formId) && !studentName) { 
-            showEnhancedToast('danger', 'يرجى اختيار الطالب أولاً لطباعة هذا النموذج'); 
-            return; 
+    function openGfModal(formId, title, requiresStudent, requiresViolation) {
+        gf_currentFormId = formId;
+        gf_currentFormTitle = title;
+        gf_requiresViolation = requiresViolation;
+        
+        // إذا النموذج لا يحتاج طالب (فارغ)، اطبع مباشرة
+        if (!requiresStudent) {
+            printGeneralFormDirect(formId, {});
+            return;
         }
         
-        // البيانات الأساسية
-        let printData = { 
-            studentName: studentName || '', 
-            grade: document.getElementById('gf-grade').value || '', 
-            class: document.getElementById('gf-class').value || '', 
-            violationDate: new Date().toLocaleDateString('ar-SA-u-ca-islamic') 
-        };
-
-        // إضافة اسم الوكيل
-        if (APP_DATA.settings && APP_DATA.settings.deputies && APP_DATA.settings.deputies.length > 0) {
-            printData.deputyName = APP_DATA.settings.deputies[0].name;
+        // تحديث عنوان النافذة
+        document.getElementById('gf-modal-title').innerText = title;
+        document.getElementById('gf-modal-subtitle').innerText = 'حدد بيانات الطالب للطباعة';
+        
+        // تعبئة قائمة الصفوف
+        const gradeSelect = document.getElementById('gf-modal-grade');
+        gradeSelect.innerHTML = '<option value="">اختر الصف</option>';
+        
+        const grades = [...new Set(APP_DATA.students.filter(s => s['المرحلة'] === currentStage).map(s => s['الصف']))];
+        const gradeOrder = ["أول", "ثاني", "ثالث"];
+        grades.sort((a, b) => {
+            const idxA = gradeOrder.findIndex(k => a.includes(k));
+            const idxB = gradeOrder.findIndex(k => b.includes(k));
+            if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+            return a.localeCompare(b, 'ar');
+        });
+        grades.forEach(g => gradeSelect.add(new Option(g, g)));
+        
+        // إعادة تعيين الحقول
+        document.getElementById('gf-modal-class').innerHTML = '<option value="">اختر الفصل</option>';
+        document.getElementById('gf-modal-class').disabled = true;
+        document.getElementById('gf-modal-student').innerHTML = '<option value="">اختر الطالب</option>';
+        document.getElementById('gf-modal-student').disabled = true;
+        document.getElementById('gf-modal-submit-btn').disabled = true;
+        
+        // إخفاء/إظهار قسم المخالفات
+        const violationSection = document.getElementById('gf-violation-section');
+        if (requiresViolation) {
+            violationSection.classList.remove('hidden');
+            document.getElementById('gf-modal-violation').innerHTML = '<option value="">-- اختر الطالب أولاً --</option>';
+        } else {
+            violationSection.classList.add('hidden');
         }
-
-        // --- معالجة خاصة للنموذج رقم 9 (جلب السجل) ---
-        if (formId === 'rasd_slooki' && studentName) {
-            showEnhancedToast('info', 'جاري جلب سجل مخالفات الطالب...');
-            
-            // استدعاء السيرفر لجلب المخالفات
-            google.script.run.withSuccessHandler(records => {
-                // البحث عن الطالب في القائمة الحالية للحصول على رقمه (الأدق للفلترة)
-                const studentObj = APP_DATA.students.find(s => s['اسم الطالب'] === studentName);
-                const studentId = studentObj ? studentObj['رقم الطالب'] : null;
-
-                // فلترة مخالفات هذا الطالب فقط
-                const studentViolations = records.filter(r => 
-                    r['اسم الطالب'] === studentName || (studentId && String(r['رقم الطالب']) === String(studentId))
-                );
-
-                // إضافة المخالفات لحزمة الطباعة
-                printData.violationsList = studentViolations;
-
-                // تنفيذ الطباعة
-                printFormDirectly(formId, encodeURIComponent(JSON.stringify(printData)));
-
-            }).getCachedViolationRecords(currentStage); // دالة موجودة في Server_Actions
-            
-            return; // توقف هنا وانتظر رد السيرفر
-        }
-
-        // الطباعة العادية لباقي النماذج
-        printFormDirectly(formId, encodeURIComponent(JSON.stringify(printData)));
+        
+        // إظهار النافذة
+        document.getElementById('gf-student-modal').classList.remove('hidden');
     }
-    
+
+    function closeGfModal() {
+        document.getElementById('gf-student-modal').classList.add('hidden');
+        gf_studentViolations = [];
+    }
+
+    // =================================================================
+    // 4. تعبئة القوائم المتتالية
+    // =================================================================
+    function gfModalPopulateClasses() {
+        const grade = document.getElementById('gf-modal-grade').value;
+        const classSelect = document.getElementById('gf-modal-class');
+        const studentSelect = document.getElementById('gf-modal-student');
+        
+        classSelect.innerHTML = '<option value="">اختر الفصل</option>';
+        studentSelect.innerHTML = '<option value="">اختر الطالب</option>';
+        classSelect.disabled = !grade;
+        studentSelect.disabled = true;
+        document.getElementById('gf-modal-submit-btn').disabled = true;
+        
+        if (grade) {
+            const classes = [...new Set(APP_DATA.students
+                .filter(s => s['المرحلة'] === currentStage && s['الصف'] === grade)
+                .map(s => s['الفصل']))];
+            classes.sort((a, b) => a.toString().localeCompare(b.toString(), 'ar'));
+            classes.forEach(c => classSelect.add(new Option(c, c)));
+        }
+    }
+
+    function gfModalPopulateStudents() {
+        const grade = document.getElementById('gf-modal-grade').value;
+        const cls = document.getElementById('gf-modal-class').value;
+        const studentSelect = document.getElementById('gf-modal-student');
+        
+        studentSelect.innerHTML = '<option value="">اختر الطالب</option>';
+        studentSelect.disabled = !cls;
+        document.getElementById('gf-modal-submit-btn').disabled = true;
+        
+        if (grade && cls) {
+            const students = APP_DATA.students.filter(s => 
+                s['المرحلة'] === currentStage && 
+                s['الصف'] === grade && 
+                s['الفصل'] == cls
+            );
+            students.sort((a, b) => a['اسم الطالب'].localeCompare(b['اسم الطالب'], 'ar'));
+            students.forEach(s => {
+                const opt = new Option(s['اسم الطالب'], s['رقم الطالب']);
+                opt.dataset.name = s['اسم الطالب'];
+                studentSelect.add(opt);
+            });
+        }
+    }
+
+    function gfModalOnStudentSelected() {
+        const studentSelect = document.getElementById('gf-modal-student');
+        const studentId = studentSelect.value;
+        const submitBtn = document.getElementById('gf-modal-submit-btn');
+        
+        if (!studentId) {
+            submitBtn.disabled = true;
+            return;
+        }
+        
+        // إذا النموذج يحتاج مخالفة، جلب مخالفات الطالب
+        if (gf_requiresViolation) {
+            submitBtn.disabled = true;
+            loadStudentViolationsForModal(studentId);
+        } else {
+            submitBtn.disabled = false;
+        }
+    }
+
+    // =================================================================
+    // 5. جلب مخالفات الطالب (للنماذج التي تحتاج مخالفة)
+    // =================================================================
+    function loadStudentViolationsForModal(studentId) {
+        const violationSelect = document.getElementById('gf-modal-violation');
+        violationSelect.innerHTML = '<option value="">جاري التحميل...</option>';
+        
+        google.script.run.withSuccessHandler(function(records) {
+            // فلترة مخالفات هذا الطالب
+            gf_studentViolations = records.filter(r => String(r['رقم الطالب']) === String(studentId));
+            
+            violationSelect.innerHTML = '<option value="">-- اختر المخالفة --</option>';
+            
+            if (gf_studentViolations.length === 0) {
+                violationSelect.innerHTML = '<option value="">لا توجد مخالفات مسجلة لهذا الطالب</option>';
+                document.getElementById('gf-violation-hint').innerText = '⚠️ لا يمكن طباعة النموذج بدون مخالفة';
+                return;
+            }
+            
+            // ترتيب المخالفات من الأحدث للأقدم
+            gf_studentViolations.sort((a, b) => new Date(b['وقت الإدخال']) - new Date(a['وقت الإدخال']));
+            
+            gf_studentViolations.forEach((v, idx) => {
+                const dateStr = v['التاريخ الهجري'] || '';
+                const degree = v['الدرجة'] || '';
+                const text = v['نص المخالفة'] || '';
+                const shortText = text.length > 30 ? text.substring(0, 30) + '...' : text;
+                
+                const opt = new Option(`${dateStr} - د${degree} - ${shortText}`, idx);
+                violationSelect.add(opt);
+            });
+            
+            document.getElementById('gf-violation-hint').innerText = 'اختر المخالفة ثم اضغط طباعة';
+            
+            // تفعيل زر الإرسال عند اختيار مخالفة
+            violationSelect.onchange = function() {
+                document.getElementById('gf-modal-submit-btn').disabled = !this.value;
+            };
+            
+        }).withFailureHandler(function(err) {
+            violationSelect.innerHTML = '<option value="">خطأ في جلب البيانات</option>';
+            showEnhancedToast('danger', 'فشل جلب مخالفات الطالب');
+        }).getCachedViolationRecords(currentStage);
+    }
+
+    // =================================================================
+    // 6. تنفيذ الطباعة
+    // =================================================================
+    function gfModalSubmit() {
+        const grade = document.getElementById('gf-modal-grade').value;
+        const cls = document.getElementById('gf-modal-class').value;
+        const studentSelect = document.getElementById('gf-modal-student');
+        const studentName = studentSelect.options[studentSelect.selectedIndex].dataset.name || studentSelect.options[studentSelect.selectedIndex].text;
+        
+        // تجهيز البيانات الأساسية
+        let printData = {
+            studentName: studentName,
+            grade: grade,
+            class: cls,
+            violationDate: new Date().toLocaleDateString('ar-SA-u-ca-islamic'),
+            violationDay: new Date().toLocaleDateString('ar-SA', { weekday: 'long' })
+        };
+        
+        // إضافة بيانات الإعدادات
+        if (APP_DATA.settings) {
+            if (APP_DATA.settings.manager) printData.managerName = APP_DATA.settings.manager;
+            if (APP_DATA.settings.deputies && APP_DATA.settings.deputies.length > 0) {
+                printData.deputyName = APP_DATA.settings.deputies[0].name;
+            }
+            if (APP_DATA.settings.committee) printData.committeeMembers = APP_DATA.settings.committee;
+        }
+        
+        // إذا النموذج يحتاج مخالفة
+        if (gf_requiresViolation) {
+            const violationIdx = document.getElementById('gf-modal-violation').value;
+            if (violationIdx !== '' && gf_studentViolations[violationIdx]) {
+                const v = gf_studentViolations[violationIdx];
+                printData.violationInfo = {
+                    name: v['نص المخالفة'],
+                    degree: v['الدرجة'],
+                    date: v['التاريخ الهجري'],
+                    points: extractPoints(v['الإجراءات'] || '')
+                };
+                printData.violationText = v['نص المخالفة'];
+                printData.violationDegree = v['الدرجة'];
+                printData.violationDate = v['التاريخ الهجري'];
+            }
+        }
+        
+        // معالجة خاصة لسجل المخالفات
+        if (gf_currentFormId === 'rasd_slooki') {
+            printData.violationsList = gf_studentViolations;
+        }
+        
+        // إغلاق النافذة والطباعة
+        closeGfModal();
+        printGeneralFormDirect(gf_currentFormId, printData);
+    }
+
+    // =================================================================
+    // 7. دالة الطباعة المباشرة
+    // =================================================================
+    function printGeneralFormDirect(formId, data) {
+        showEnhancedToast('info', 'جاري تحضير النموذج...');
+        printFormDirectly(formId, encodeURIComponent(JSON.stringify(data)));
+    }
+
+    // =================================================================
+    // 8. استخراج النقاط من نص الإجراءات
+    // =================================================================
+    function extractPoints(proceduresText) {
+        if (!proceduresText) return '0';
+        
+        // البحث عن أرقام في النص
+        const numberMatch = proceduresText.match(/حسم\s*(\d+)/);
+        if (numberMatch) return numberMatch[1];
+        
+        if (proceduresText.includes('درجة واحدة')) return '1';
+        if (proceduresText.includes('درجتين') || proceduresText.includes('درجتان')) return '2';
+        if (proceduresText.includes('ثلاث درجات') || proceduresText.includes('3 درجات')) return '3';
+        if (proceduresText.includes('عشر درجات') || proceduresText.includes('10 درجات')) return '10';
+        if (proceduresText.includes('خمس عشرة') || proceduresText.includes('15 درجة')) return '15';
+        
+        return '0';
+    }
 </script>

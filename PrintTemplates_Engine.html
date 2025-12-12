@@ -191,12 +191,17 @@
                 fillCommitteeMembers('lajnah_abs_members_table', data.committeeMembers);
                 break;
 
-            
-            // ===== نموذج 7: إحالة طالب =====
+
+          // ===== نموذج 7: إحالة طالب =====
             case 'ehalat_talib':
                 fillField('ehala_studentName', data.studentName);
                 fillField('ehala_grade', data.grade);
                 fillField('ehala_text', '● ' + (data.violationText || ''));
+    
+            // ✅ التاريخ - إذا لم يكن موجوداً، استخدم تاريخ اليوم الهجري
+                const ehalaDate = data.violationDate || new Date().toLocaleDateString('ar-SA-u-ca-islamic');
+                fillField('ehala_date', ehalaDate, true);
+    
                 fillField('ehala_degree', data.violationDegree, true);
                 break;
             

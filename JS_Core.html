@@ -11,7 +11,7 @@
     // 2. تهيئة النظام (Initialization)
     // =================================================================
     document.addEventListener('DOMContentLoaded', function() {
-        google.script.run.withSuccessHandler(onDataReceived).getInitialData();
+        google.script.run.withSuccessHandler(onDataReceived).withFailureHandler(onDataError).getInitialData();
         setupNavigation();
     });
 
@@ -23,6 +23,10 @@
         } else {
             showEnhancedToast('danger', 'فشل تحميل البيانات: ' + data.error);
         }
+    }
+
+    function onDataError(error) {
+        showEnhancedToast('danger', 'خطأ في الاتصال بالخادم: ' + error);
     }
 
     // =================================================================
@@ -48,7 +52,8 @@
 
         // زر التحديث
         document.getElementById('refreshBtn').addEventListener('click', () => {
-            google.script.run.withSuccessHandler(onDataReceived).getInitialData();
+            showEnhancedToast('info', 'جاري تحديث البيانات...');
+            google.script.run.withSuccessHandler(onDataReceived).withFailureHandler(onDataError).getInitialData();
         });
     }
 
@@ -57,17 +62,32 @@
         Object.values(chartInstances).forEach(c => c.destroy());
         chartInstances = {};
         
-        // التوجيه للدالة المناسبة حسب القسم
-        if (sectionId === 'new-violation') renderNewViolationPage();
-        else if (sectionId === 'violations-history') renderHistoryPage();
-        // ... الكود السابق
-else if (sectionId === 'general-forms') renderGeneralFormsPage();
-else if (sectionId === 'whatsapp') renderWhatsAppPage(); // <--- أضف هذا السطر
-// ... باقي الكود
-        else if (sectionId === 'reports') renderReportsPage();
-        else if (sectionId === 'general-forms') renderGeneralFormsPage();
-        else if (sectionId === 'absence') renderAbsencePage(); // <-- تأكد من وجود هذا السطر
-        else if (sectionId === 'settings') renderSettingsPage();
+        // التوجيه للدالة المناسبة حسب القسم (مُرتب ومُصحح)
+        switch(sectionId) {
+            case 'new-violation':
+                renderNewViolationPage();
+                break;
+            case 'violations-history':
+                renderHistoryPage();
+                break;
+            case 'reports':
+                renderReportsPage();
+                break;
+            case 'absence':
+                renderAbsencePage();
+                break;
+            case 'general-forms':
+                renderGeneralFormsPage();
+                break;
+            case 'whatsapp':
+                renderWhatsAppPage();
+                break;
+            case 'settings':
+                renderSettingsPage();
+                break;
+            default:
+                console.warn('قسم غير معروف:', sectionId);
+        }
     }
 
     // =================================================================
@@ -77,9 +97,9 @@ else if (sectionId === 'whatsapp') renderWhatsAppPage(); // <--- أضف هذا �
     // إظهار التنبيهات (Toast)
     function showEnhancedToast(type, message) {
         const toast = document.getElementById('toast-notification');
-        const colors = { success: 'bg-green-600', danger: 'bg-red-600', info: 'bg-blue-600' };
+        const colors = { success: 'bg-green-600', danger: 'bg-red-600', info: 'bg-blue-600', warning: 'bg-yellow-500' };
         
-        toast.className = `fixed top-5 left-1/2 transform -translate-x-1/2 text-white px-6 py-3 rounded-lg shadow-lg z-50 transition-all duration-300 ${colors[type]}`;
+        toast.className = `fixed top-5 left-1/2 transform -translate-x-1/2 text-white px-6 py-3 rounded-lg shadow-lg z-50 transition-all duration-300 ${colors[type] || colors.info}`;
         toast.innerHTML = message;
         
         // إظهار
@@ -102,23 +122,19 @@ else if (sectionId === 'whatsapp') renderWhatsAppPage(); // <--- أضف هذا �
         return days[d.getDay()] || '';
     }
 
-// الحصول على معرف النموذج من اسمه العربي
+    // الحصول على معرف النموذج من اسمه العربي
     function getFormIdByName(name) {
         // تنظيف الاسم من المسافات الزائدة لضمان المطابقة
         const cleanName = name ? name.trim() : '';
         
         const map = { 
             'إشعار ولي الأمر': 'ishar_wali_amr', 
-            'اشعار ولي الامر': 'ishar_wali_amr', // احتمال بدون همزات
-            
+            'اشعار ولي الامر': 'ishar_wali_amr',
             'تعهد سلوكي': 'tahood_slooki', 
-            
             'إحالة طالب': 'ehalat_talib', 
             'احالة طالب': 'ehalat_talib',
-            
             'دعوة ولي أمر': 'dawat_wali_amr', 
             'دعوة ولي الأمر': 'dawat_wali_amr', 
-            
             'محضر ضبط واقعة': 'mahdar_dab_wakea', 
             'محضر اجتماع لجنة': 'mahdar_lajnah', 
             'فرص تعويض': 'tawid_darajat' 
