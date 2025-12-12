@@ -73,12 +73,15 @@
     // =================================================================
     // 3. دالة تعبئة حقل مع ضبط الخط
     // =================================================================
+  // دالة تعبئة الحقول (معدلة لتقبل الرقم صفر وتطبعه)
     function fillField(elementId, value, convertToIndic = false) {
         const element = document.getElementById(elementId);
         if (!element) return;
         
-        let finalValue = value || '';
-        if (convertToIndic && finalValue) {
+        // الشرط هنا: إذا كانت القيمة 0 أو "0" اعتبرها نصاً واطبعها، وإلا تعامل معها كالمعتاد
+        let finalValue = (value === 0 || value === '0') ? '0' : (value || '');
+        
+        if (convertToIndic && finalValue !== '') {
             finalValue = toIndic(finalValue);
         }
         
@@ -327,21 +330,31 @@
             
             // ===== نموذج 12: غياب بدون عذر =====
             case 'ghiab_bidon_ozr':
-                fillField('ghiab_no_studentName', data.studentName);
-                fillField('ghiab_no_grade', data.grade);
+               fillField('ghiab_no_studentName', data.studentName);
+               fillField('ghiab_no_grade', data.grade);
+               if (data.deputyName) {
+               fillField('ghiab_no_deputy', data.deputyName);
+                }
                 break;
             
             // ===== نموذج 13: غياب بعذر =====
             case 'ghiab_ozr':
-                fillField('ghiab_ozr_studentName', data.studentName);
-                fillField('ghiab_ozr_grade', data.grade);
-                break;
+               fillField('ghiab_ozr_studentName', data.studentName);
+               fillField('ghiab_ozr_grade', data.grade);
+               if (data.deputyName) {
+               fillField('ghiab_ozr_deputy', data.deputyName);
+               } 
+                break;break;
             
-            // ===== نموذج 14: تعهد حضور =====
+            // ===== نموذج 14: تعهد حضور (المطور) =====
             case 'tahood_hodoor':
                 fillField('tahood_h_studentName', data.studentName);
                 fillField('tahood_h_grade', data.grade);
-                fillField('tahood_h_days', data.absenceDays, true);
+                
+                // استقبال الرقمين بشكل منفصل كما في الإحالة
+                fillField('tahood_h_unexcused', data.unexcusedDays, true); // true للأرقام الهندية
+                fillField('tahood_h_excused', data.excusedDays, true);     // true للأرقام الهندية
+                
                 fillField('tahood_h_sig_student', data.studentName);
                 break;
 
@@ -382,13 +395,16 @@
                 break;
             
             // ===== نموذج 16: عقد التزام مدرسي =====
-            case 'iltizam_madrasi':
-                fillField('iltizam_name', data.studentName);
-                fillField('iltizam_grade', data.grade);
-                fillField('iltizam_day', data.violationDay);
-                fillField('iltizam_date', data.violationDate, true);
-                fillField('iltizam_student_sign', data.studentName);
-                break;
+case 'iltizam_madrasi':
+    fillField('iltizam_name', data.studentName);
+    fillField('iltizam_grade', data.grade);
+    fillField('iltizam_day', data.violationDay);
+    fillField('iltizam_date', data.violationDate, true);
+    fillField('iltizam_student_sign', data.studentName);
+    if (data.deputyName) {
+        fillField('iltizam_deputy', data.deputyName);
+    }
+    break;
             
             // ===== نموذج 18: حالة عالية الخطورة =====
             case 'high_risk':

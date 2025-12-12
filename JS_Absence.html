@@ -297,7 +297,7 @@
         printFormDirectly('ehalat_absence', encodeURIComponent(JSON.stringify(data)));
     }
 
-    function printMahdarLajnahAbsence(name, grade, unexcused, excused) {
+   function printMahdarLajnahAbsence(name, grade, unexcused, excused) {
   const now = new Date();
   const islamicDate = now.toLocaleDateString('ar-SA-u-ca-islamic');
   const dayName = now.toLocaleDateString('ar-SA', { weekday: 'long' });
@@ -310,10 +310,9 @@
     unexcusedDays: unexcused,
     excusedDays: excused
   };
-
-  printFormDirectly('mahdarlajnahabsence', encodeURIComponent(JSON.stringify(data)));
+  // التعديل الهام هنا: التأكد من كتابة اسم النموذج مع الشرطات السفلية ليطابق القالب
+  printFormDirectly('mahdar_lajnah_absence', encodeURIComponent(JSON.stringify(data)));
 }
-
 
     // =================================================================
     // 4. طرق العرض (Renderers)
@@ -346,7 +345,8 @@ if (student.unexcused >= 3) {
         // تعهد (3-4) = نفس نموذج التعهد القديم
         lbl = 'تعهد (3)';
         clr = 'text-yellow-700 bg-yellow-50';
-        onclickCode = `printAbsenceForm('tahood_hodoor', '${student.name}', '${student.grade}', ${student.unexcused}, 'unexcused')`;
+        // نرسل الرقمين معاً الآن
+onclickCode = `printAbsenceForm('tahood_hodoor', '${student.name}', '${student.grade}', ${student.unexcused}, ${student.excused}, 'unexcused')`;
     }
 
     // الزر الأساسي (تعهد/لجنة/حماية)
@@ -429,7 +429,7 @@ if (student.excused >= 5)
 
                 <div class="flex gap-1">
                      <button onclick="executeGroupPrint('tahood_hodoor', 'unexcused')" class="px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded text-[10px] transition-colors" title="طباعة فردية متتابعة">تعهد فردي</button>
-                     <button onclick="executeGroupPrint('ehalat_talib', 'auto')" class="px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded text-[10px] transition-colors" title="طباعة فردية متتابعة">إحالة فردية</button>
+                     <button onclick="executeGroupAbsenceReferral()" class="px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded text-[10px] transition-colors" title="طباعة نموذج إحالة غياب مخصص (مثل البطاقات)">إحالة غياب</button>
                 </div>
 
                 <button onclick="deselectAllTable()" class="mr-2 text-gray-400 hover:text-red-400"><span class="material-symbols-outlined text-[20px]">cancel</span></button>
@@ -470,7 +470,7 @@ if (student.excused >= 5)
                     <td class="px-4 py-3 text-sm text-center font-bold ${s.excused>0?'text-emerald-600':'text-gray-400'}">${toIndic(s.excused)}</td>
                     <td class="px-4 py-3 text-sm text-center font-bold">${toIndic(score)}%</td>
                     <td class="px-4 py-3 text-sm">
-                        ${s.unexcused>=3 ? `<button onclick="printAbsenceForm('tahood_hodoor', '${s.name}', '${s.grade}', ${s.unexcused}, 'unexcused')" class="text-indigo-600 hover:underline text-xs font-bold">تعهد</button>` : ''}
+                      ${s.unexcused>=3 ? `<button onclick="printAbsenceForm('tahood_hodoor', '${s.name}', '${s.grade}', ${s.unexcused}, ${s.excused}, 'unexcused')" class="text-indigo-600 hover:underline text-xs font-bold">تعهد</button>` : ''}
                     </td>
                 </tr>
             `;
@@ -499,17 +499,29 @@ if (student.excused >= 5)
     }
 
 
-function printAbsenceForm(formId, name, grade, days, type) {
+// دالة طباعة نماذج الغياب (محدثة لترسل الأرقام للمحرك)
+function printAbsenceForm(formId, name, grade, unexcused, excused, type) {
   const now = new Date();
   const islamicDate = now.toLocaleDateString('ar-SA-u-ca-islamic');
   const dayName = now.toLocaleDateString('ar-SA', { weekday: 'long' });
+
+  let daysValue = (type === 'unexcused') ? unexcused : excused;
+
+  // ✅ جلب اسم الوكيل من الإعدادات
+  let deputyName = '';
+  if (APP_DATA.settings && APP_DATA.settings.deputies && APP_DATA.settings.deputies.length > 0) {
+      deputyName = APP_DATA.settings.deputies[0].name;
+  }
 
   const data = {
     studentName: name,
     grade: grade,
     violationDate: islamicDate,
     violationDay: dayName,
-    violationText: type === 'unexcused' ? toIndic(days) : toIndic(days)
+    violationText: toIndic(daysValue), 
+    unexcusedDays: unexcused,
+    excusedDays: excused,
+    deputyName: deputyName  // ✅ إضافة اسم الوكيل
   };
 
   printFormDirectly(formId, encodeURIComponent(JSON.stringify(data)));
@@ -681,7 +693,7 @@ function printAbsenceForm(formId, name, grade, days, type) {
         }
     }
 
-    function executeGroupPrint(formId, typeContext) {
+  function executeGroupPrint(formId, typeContext) {
         const checkedBoxes = document.querySelectorAll('.student-checkbox:checked');
         if (checkedBoxes.length === 0) return;
 
@@ -693,6 +705,7 @@ function printAbsenceForm(formId, name, grade, days, type) {
             let days = 0;
             let type = typeContext;
 
+            // تحديد النوع تلقائياً إذا كان الخيار auto
             if (typeContext === 'auto') {
                 if (s.unexcused >= s.excused) { days = s.unexcused; type = 'unexcused'; }
                 else { days = s.excused; type = 'excused'; }
@@ -703,7 +716,8 @@ function printAbsenceForm(formId, name, grade, days, type) {
             }
 
             setTimeout(() => {
-                printAbsenceForm(formId, s.name, s.grade, days, type);
+                // الاستدعاء الصحيح مع تمرير الرقمين (بدون عذر و بعذر)
+                printAbsenceForm(formId, s.name, s.grade, s.unexcused, s.excused, type);
             }, delay);
             
             delay += 1500;
@@ -775,5 +789,36 @@ function printAbsenceForm(formId, name, grade, days, type) {
 
   printFormDirectly('mahdar_lajnah_absence', encodeURIComponent(JSON.stringify(data)));
 }
+
+// =================================================================
+    // دالة جديدة: طباعة إحالات غياب فردية (نفس نموذج البطاقات) للمجموعة المختارة
+    // =================================================================
+    function executeGroupAbsenceReferral() {
+        const checkedBoxes = document.querySelectorAll('.student-checkbox:checked');
+        if (checkedBoxes.length === 0) {
+            showEnhancedToast('danger', 'يرجى اختيار طالب واحد على الأقل');
+            return;
+        }
+
+        showEnhancedToast('info', 'جاري تحضير نماذج إحالة الغياب...');
+        let delay = 0;
+        
+        checkedBoxes.forEach((cb) => {
+            // استخراج بيانات الطالب من مربع الاختيار
+            const s = JSON.parse(decodeURIComponent(cb.value));
+            
+            setTimeout(() => {
+                // هنا نستدعي نفس الدالة التي يستخدمها زر البطاقات
+                printAbsenceReferral(s.name, s.grade, s.unexcused, s.excused);
+            }, delay);
+            
+            delay += 1500; // فاصل زمني 1.5 ثانية بين كل أمر طباعة لمنع تداخل النوافذ
+        });
+        
+        // إلغاء التحديد بعد الانتهاء
+        setTimeout(() => {
+            deselectAllTable();
+        }, delay + 500);
+    }
 
 </script>

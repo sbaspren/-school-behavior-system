@@ -42,7 +42,7 @@
                         نماذج الإجراءات السلوكية
                     </h3>
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        ${createFormCard('iltizam_madrasi', 'عقد التزام مدرسي', 'يوقع بداية العام أو عند العودة', 'text-indigo-600', 'handshake', true)}
+                        ${createIltizamCard()}
                         ${createFormCard('tawid_darajat', 'فرص تعويض الدرجات', 'لتحسين الدرجات المحسومة', 'text-purple-600', 'trending_up', true, true)}
                         ${createFormCard('rasd_tamayuz', 'رصد سلوك متميز', 'سجل الطالب للإنجازات', 'text-emerald-600', 'star', true)}
                         ${createFormCard('dawat_wali_amr', 'دعوة ولي أمر', 'طلب حضور للمدرسة', 'text-gray-700', 'mail', true)}
@@ -434,4 +434,100 @@
         
         return '0';
     }
+
+    // =================================================================
+// 4. كارت عقد الالتزام المدرسي مع خيار الطباعة الفارغة
+// =================================================================
+// =================================================================
+// كارت عقد الالتزام المدرسي مع خيار الطباعة الفارغة
+// =================================================================
+function createIltizamCard() {
+    return `
+        <div class="form-card bg-white p-5 rounded-xl cursor-pointer border border-gray-200 hover:border-indigo-300 hover:shadow-lg transition-all group"
+             onclick="showIltizamOptions()">
+            <div class="flex items-center gap-3 mb-2">
+                <div class="p-2 bg-gray-50 rounded-xl group-hover:bg-indigo-50 transition-colors">
+                    <span class="material-symbols-outlined text-indigo-600">handshake</span>
+                </div>
+                <h3 class="font-bold text-indigo-600">عقد التزام مدرسي</h3>
+            </div>
+            <p class="text-sm text-gray-500">يوقع بداية العام أو عند العودة</p>
+        </div>`;
+}
+
+function showIltizamOptions() {
+    const modal = document.createElement('div');
+    modal.id = 'iltizam-modal';
+    modal.className = 'fixed inset-0 bg-gray-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4';
+    modal.innerHTML = `
+        <div class="bg-white rounded-2xl shadow-2xl p-6 w-96 max-w-[90vw]">
+            <div class="text-center mb-4">
+                <div class="w-14 h-14 bg-indigo-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                    <span class="material-symbols-outlined text-indigo-600 text-3xl">handshake</span>
+                </div>
+                <h3 class="text-lg font-bold text-gray-800">عقد الالتزام المدرسي</h3>
+                <p class="text-sm text-gray-500 mt-1">اختر طريقة الطباعة</p>
+            </div>
+            
+            <div class="space-y-3">
+                <button onclick="openIltizamWithStudent()" class="w-full flex items-center gap-3 p-4 rounded-xl border-2 border-gray-200 hover:border-indigo-400 hover:bg-indigo-50 transition-all group">
+                    <span class="material-symbols-outlined text-indigo-500 group-hover:text-indigo-600">person</span>
+                    <div class="text-right flex-1">
+                        <div class="font-bold text-gray-800">طباعة ببيانات الطالب</div>
+                        <div class="text-xs text-gray-500">اختر الطالب من القائمة</div>
+                    </div>
+                </button>
+                
+                <button onclick="printIltizamBlank()" class="w-full flex items-center gap-3 p-4 rounded-xl border-2 border-gray-200 hover:border-green-400 hover:bg-green-50 transition-all group">
+                    <span class="material-symbols-outlined text-green-500 group-hover:text-green-600">content_copy</span>
+                    <div class="text-right flex-1">
+                        <div class="font-bold text-gray-800">طباعة نموذج فارغ</div>
+                        <div class="text-xs text-gray-500">للتصوير وتوزيعه على عدة طلاب</div>
+                    </div>
+                </button>
+            </div>
+            
+            <button onclick="closeIltizamModal()" class="w-full mt-4 py-2 text-gray-500 hover:text-gray-700 text-sm">
+                إلغاء
+            </button>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) closeIltizamModal();
+    });
+}
+
+function closeIltizamModal() {
+    const modal = document.getElementById('iltizam-modal');
+    if (modal) modal.remove();
+}
+
+function openIltizamWithStudent() {
+    closeIltizamModal();
+    // فتح نافذة اختيار الطالب العادية
+    openGfModal('iltizam_madrasi', 'عقد التزام مدرسي', true, false);
+}
+
+function printIltizamBlank() {
+    closeIltizamModal();
+    
+    const days = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+    const dayName = days[new Date().getDay()];
+    
+    let printData = {
+        studentName: '',
+        grade: '',
+        violationDay: dayName,
+        violationDate: new Date().toLocaleDateString('ar-SA-u-ca-islamic')
+    };
+    
+    if (APP_DATA.settings && APP_DATA.settings.deputies && APP_DATA.settings.deputies.length > 0) {
+        printData.deputyName = APP_DATA.settings.deputies[0].name;
+    }
+    
+    printFormDirectly('iltizam_madrasi', encodeURIComponent(JSON.stringify(printData)));
+}
+
 </script>
