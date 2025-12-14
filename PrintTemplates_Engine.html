@@ -413,10 +413,13 @@ case 'iltizam_madrasi':
                 break;
             
             // ===== نموذج 19: إبلاغ إيذاء =====
-            case 'eblagh_etha':
-                fillField('eblagh_victim_name', data.studentName);
-                fillField('eblagh_grade', data.grade);
-                break;
+case 'eblagh_etha':
+    fillField('eblagh_victim_name', data.studentName);
+    fillField('eblagh_grade', data.grade);
+    // ✅ إضافة التاريخ الهجري
+    const eblaghDate = data.violationDate || new Date().toLocaleDateString('ar-SA-u-ca-islamic');
+    fillField('eblagh_date', eblaghDate, true);
+    break;
             
             // ===== نموذج 20: خطة تعديل سلوك =====
             case 'khota_tadeel':

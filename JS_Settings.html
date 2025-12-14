@@ -1,287 +1,808 @@
 <script>
-    // =================================================================
-    // صفحة الإعدادات - إدارة البيانات (نسخة محسنة مع مؤشر التحميل)
-    // =================================================================
+// =================================================================
+// صفحة الإعدادات - النسخة الشاملة (تبويبات متعددة)
+// =================================================================
 
-    let settings_allStudents = []; // لتخزين الطلاب وعمل البحث السريع
+let settings_currentTab = 'school';
+let settings_schoolData = {};
+let settings_allStudents = [];
+let settings_users = [];
+let settings_permissions = [];
+let settings_roles = [];
+let settings_scopeOptions = { stages: [], grades: [], classes: [] };
+let settings_editingUser = null;
 
-    function renderSettingsPage() {
-        const main = document.getElementById('main-content');
-        main.innerHTML = `
-            <div class="max-w-6xl mx-auto">
-                <div class="flex items-center gap-3 mb-6">
-                    <div class="p-3 bg-slate-100 rounded-2xl text-slate-600">
-                        <span class="material-symbols-outlined text-4xl">settings</span>
-                    </div>
-                    <div>
-                        <h2 class="text-2xl font-bold text-gray-800">إعدادات النظام</h2>
-                        <p class="text-sm text-gray-500">المرحلة الحالية: <span class="text-indigo-600 font-bold">${currentStage}</span></p>
-                    </div>
+function renderSettingsPage() {
+    const main = document.getElementById('main-content');
+    main.innerHTML = `
+        <div class="max-w-6xl mx-auto">
+            <!-- العنوان -->
+            <div class="flex items-center gap-3 mb-6">
+                <div class="p-3 bg-slate-100 rounded-2xl text-slate-600">
+                    <span class="material-symbols-outlined text-4xl">settings</span>
                 </div>
-
-                <div class="flex border-b border-gray-200 mb-6 overflow-x-auto">
-                    <button class="px-6 py-3 text-gray-500 hover:text-gray-700 font-medium text-sm cursor-not-allowed opacity-50 whitespace-nowrap">بيانات المدرسة</button>
-                    <button class="px-6 py-3 text-gray-500 hover:text-gray-700 font-medium text-sm cursor-not-allowed opacity-50 whitespace-nowrap">لجنة التوجيه</button>
-                    <button class="px-6 py-3 text-gray-500 hover:text-gray-700 font-medium text-sm cursor-not-allowed opacity-50 whitespace-nowrap">بيانات المعلمين</button>
-                    <button class="px-6 py-3 text-indigo-600 border-b-2 border-indigo-600 font-bold text-sm whitespace-nowrap">بيانات الطلاب</button>
-                </div>
-
-                <div id="settings-students-content" class="space-y-6">
-                    
-                    <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200 flex flex-wrap gap-4 justify-between items-center">
-                        <div class="flex gap-2 items-center">
-                            <div class="relative">
-                                <span class="material-symbols-outlined absolute right-3 top-2.5 text-gray-400">search</span>
-                                <input type="text" id="setting-search" onkeyup="filterSettingsTable()" placeholder="بحث بالاسم أو الهوية..." class="pr-10 pl-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 w-64">
-                            </div>
-                            <span class="text-xs text-gray-500 font-bold" id="setting-count">0 طالب</span>
-                        </div>
-
-                        <div class="flex gap-2">
-                            <button onclick="openAddStudentModal()" class="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-bold text-sm transition-all">
-                                <span class="material-symbols-outlined">person_add</span> إضافة طالب
-                            </button>
-                            
-                            <button id="btn-upload-excel" onclick="document.getElementById('excel-upload').click()" class="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 font-bold text-sm transition-all shadow-sm border border-emerald-500">
-                                <span class="material-symbols-outlined">upload_file</span> استيراد (Excel)
-                            </button>
-                            <input type="file" id="excel-upload" accept=".xls,.xlsx" class="hidden" onchange="processExcelFile(this)">
-                        </div>
-                    </div>
-
-                    <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                        <div class="overflow-x-auto max-h-[500px]">
-                            <table class="min-w-full divide-y divide-gray-200">
-                                <thead class="bg-gray-50 sticky top-0">
-                                    <tr>
-                                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">اسم الطالب</th>
-                                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">الهوية (رقم الطالب)</th>
-                                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">الصف / الفصل</th>
-                                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">الجوال</th>
-                                        <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">إجراءات</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="settings-students-table" class="bg-white divide-y divide-gray-200">
-                                    <tr><td colspan="5" class="px-6 py-10 text-center text-gray-500">جاري تحميل البيانات...</td></tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
+                <div>
+                    <h2 class="text-2xl font-bold text-gray-800">إعدادات النظام</h2>
+                    <p class="text-sm text-gray-500">المرحلة الحالية: <span class="text-indigo-600 font-bold">${currentStage}</span></p>
                 </div>
             </div>
 
-            <div id="add-student-modal" class="fixed inset-0 bg-gray-900/50 hidden z-50 flex items-center justify-center backdrop-blur-sm">
-                <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg p-6 transform transition-all">
-                    <div class="flex justify-between items-center mb-4 border-b pb-2">
-                        <h3 class="text-lg font-bold text-gray-800">إضافة طالب جديد</h3>
-                        <button onclick="closeAddStudentModal()" class="text-gray-400 hover:text-gray-600"><span class="material-symbols-outlined">close</span></button>
-                    </div>
-                    
-                    <div class="space-y-4">
-                        <div>
-                            <label class="block text-sm font-bold text-gray-700 mb-1">اسم الطالب</label>
-                            <input type="text" id="new-name" class="w-full border-gray-300 rounded-lg focus:ring-indigo-500">
-                        </div>
-                        <div>
-                            <label class="block text-sm font-bold text-gray-700 mb-1">رقم الهوية (رقم الطالب)</label>
-                            <input type="text" id="new-id" class="w-full border-gray-300 rounded-lg focus:ring-indigo-500">
-                        </div>
-                        <div class="grid grid-cols-2 gap-4">
-                            <div>
-                                <label class="block text-sm font-bold text-gray-700 mb-1">الصف</label>
-                                <select id="new-grade" class="w-full border-gray-300 rounded-lg focus:ring-indigo-500">
-                                    <option value="">اختر الصف</option>
-                                    <option value="أول متوسط">أول متوسط</option>
-                                    <option value="ثاني متوسط">ثاني متوسط</option>
-                                    <option value="ثالث متوسط">ثالث متوسط</option>
-                                    <option value="أول ثانوي">أول ثانوي</option>
-                                    <option value="ثاني ثانوي">ثاني ثانوي</option>
-                                    <option value="ثالث ثانوي">ثالث ثانوي</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-bold text-gray-700 mb-1">الفصل</label>
-                                <select id="new-class" class="w-full border-gray-300 rounded-lg focus:ring-indigo-500">
-                                    <option value="أ">أ</option><option value="ب">ب</option><option value="ج">ج</option>
-                                    <option value="د">د</option><option value="هـ">هـ</option><option value="و">و</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div>
-                            <label class="block text-sm font-bold text-gray-700 mb-1">رقم الجوال (اختياري)</label>
-                            <input type="text" id="new-mobile" placeholder="9665xxxxxxxx" class="w-full border-gray-300 rounded-lg focus:ring-indigo-500">
-                        </div>
-                    </div>
+            <!-- التبويبات -->
+            <div class="flex border-b border-gray-200 mb-6 overflow-x-auto" id="settings-tabs">
+                <button onclick="switchSettingsTab('school')" id="tab-school" class="px-6 py-3 font-medium text-sm whitespace-nowrap border-b-2 border-indigo-600 text-indigo-600">بيانات المدرسة</button>
+                <button onclick="switchSettingsTab('users')" id="tab-users" class="px-6 py-3 text-gray-500 hover:text-gray-700 font-medium text-sm whitespace-nowrap">الهيئة الإدارية</button>
+                <button onclick="switchSettingsTab('committee')" id="tab-committee" class="px-6 py-3 text-gray-500 hover:text-gray-700 font-medium text-sm whitespace-nowrap">لجنة التوجيه</button>
+                <button onclick="switchSettingsTab('teachers')" id="tab-teachers" class="px-6 py-3 text-gray-500 hover:text-gray-700 font-medium text-sm whitespace-nowrap">المعلمين</button>
+                <button onclick="switchSettingsTab('students')" id="tab-students" class="px-6 py-3 text-gray-500 hover:text-gray-700 font-medium text-sm whitespace-nowrap">الطلاب</button>
+            </div>
 
-                    <div class="mt-6 flex justify-end gap-3">
-                        <button onclick="closeAddStudentModal()" class="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg font-bold">إلغاء</button>
-                        <button onclick="submitNewStudent()" class="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-bold">حفظ</button>
-                    </div>
+            <!-- محتوى التبويبات -->
+            <div id="settings-content">
+                <div class="text-center py-10 text-gray-500">جاري التحميل...</div>
+            </div>
+        </div>
+    `;
+    
+    switchSettingsTab('school');
+}
+
+// =================================================================
+// تبديل التبويبات
+// =================================================================
+function switchSettingsTab(tab) {
+    settings_currentTab = tab;
+    
+    document.querySelectorAll('#settings-tabs button').forEach(btn => {
+        btn.classList.remove('border-b-2', 'border-indigo-600', 'text-indigo-600');
+        btn.classList.add('text-gray-500');
+    });
+    const activeTab = document.getElementById('tab-' + tab);
+    if (activeTab) {
+        activeTab.classList.remove('text-gray-500');
+        activeTab.classList.add('border-b-2', 'border-indigo-600', 'text-indigo-600');
+    }
+    
+    const content = document.getElementById('settings-content');
+    content.innerHTML = '<div class="text-center py-10 text-gray-500">جاري التحميل...</div>';
+    
+    switch(tab) {
+        case 'school':
+            loadSchoolSettings();
+            break;
+        case 'users':
+            loadUsersSettings();
+            break;
+        case 'committee':
+            renderCommitteeTab();
+            break;
+        case 'teachers':
+            renderTeachersTab();
+            break;
+        case 'students':
+            loadStudentsSettings();
+            break;
+    }
+}
+
+// =================================================================
+// تبويب بيانات المدرسة
+// =================================================================
+function loadSchoolSettings() {
+    google.script.run
+        .withSuccessHandler(function(result) {
+            if (result.success) {
+                settings_schoolData = result.data;
+                renderSchoolTab();
+            } else {
+                showToast('خطأ في تحميل البيانات: ' + result.error, 'error');
+            }
+        })
+        .withFailureHandler(function(error) {
+            showToast('خطأ في الاتصال: ' + error, 'error');
+        })
+        .getSchoolSettings();
+}
+
+function renderSchoolTab() {
+    const data = settings_schoolData;
+    const stages = data.stages || [];
+    
+    const content = document.getElementById('settings-content');
+    content.innerHTML = `
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            
+            <div class="mb-6">
+                <label class="block text-sm font-bold text-gray-700 mb-3">نوع المدرسة</label>
+                <div class="flex gap-4">
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input type="radio" name="school_type" value="بنين" ${data.school_type === 'بنين' ? 'checked' : ''} class="w-4 h-4 text-indigo-600">
+                        <span>بنين</span>
+                    </label>
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input type="radio" name="school_type" value="بنات" ${data.school_type === 'بنات' ? 'checked' : ''} class="w-4 h-4 text-indigo-600">
+                        <span>بنات</span>
+                    </label>
                 </div>
             </div>
-        `;
-        
-        loadSettingsStudents();
-    }
 
-    // ==========================================
-    // 1. تحميل وعرض البيانات
-    // ==========================================
-    function loadSettingsStudents() {
-        if(APP_DATA.students) {
-            settings_allStudents = APP_DATA.students.filter(s => s['المرحلة'] === currentStage);
-            renderSettingsTable(settings_allStudents);
-        }
-    }
+            <div class="mb-6">
+                <label class="block text-sm font-bold text-gray-700 mb-3">المراحل الدراسية</label>
+                <div class="flex gap-4 flex-wrap">
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" id="stage_primary" value="ابتدائي" ${stages.includes('ابتدائي') ? 'checked' : ''} class="w-4 h-4 text-indigo-600 rounded">
+                        <span>ابتدائي</span>
+                    </label>
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" id="stage_intermediate" value="متوسط" ${stages.includes('متوسط') ? 'checked' : ''} class="w-4 h-4 text-indigo-600 rounded">
+                        <span>متوسط</span>
+                    </label>
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" id="stage_secondary" value="ثانوي" ${stages.includes('ثانوي') ? 'checked' : ''} class="w-4 h-4 text-indigo-600 rounded">
+                        <span>ثانوي</span>
+                    </label>
+                </div>
+            </div>
 
-    function renderSettingsTable(data) {
-        const tbody = document.getElementById('settings-students-table');
-        document.getElementById('setting-count').innerText = data.length + ' طالب';
-        
-        if(data.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="5" class="px-6 py-10 text-center text-gray-400">لا يوجد طلاب في هذه المرحلة. قم برفع ملف الإكسل.</td></tr>';
-            return;
-        }
+            <hr class="my-6 border-gray-200">
 
-        let html = '';
-        data.forEach(s => {
-            html += `
-                <tr class="hover:bg-gray-50 group">
-                    <td class="px-6 py-3 text-sm font-bold text-gray-900">${s['اسم الطالب']}</td>
-                    <td class="px-6 py-3 text-sm text-gray-500 font-mono">${s['رقم الطالب']}</td>
-                    <td class="px-6 py-3 text-sm text-gray-600">${s['الصف']} - ${s['الفصل']}</td>
-                    <td class="px-6 py-3 text-sm text-gray-500" dir="ltr">${s['رقم الجوال'] || '-'}</td>
-                    <td class="px-6 py-3 text-center">
-                        <button onclick="deleteStudent('${s['رقم الطالب']}', '${s['اسم الطالب']}')" class="text-red-400 hover:text-red-600 opacity-0 group-hover:opacity-100 transition-all" title="حذف الطالب">
-                            <span class="material-symbols-outlined">delete</span>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-2">الإدارة العامة للتعليم بمنطقة</label>
+                    <input type="text" id="school_region" value="${data.region || ''}" placeholder="مثال: عسير" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-2">إدارة الشؤون التعليمية</label>
+                    <select id="school_education_dept" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                        <option value="بنين" ${data.education_dept === 'بنين' ? 'selected' : ''}>بنين</option>
+                        <option value="بنات" ${data.education_dept === 'بنات' ? 'selected' : ''}>بنات</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="mb-4">
+                <label class="block text-sm font-bold text-gray-700 mb-2">اسم المدرسة</label>
+                <input type="text" id="school_name" value="${data.school_name || ''}" placeholder="مثال: متوسطة وثانوية العرين" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+            </div>
+
+            <div class="mb-4">
+                <label class="block text-sm font-bold text-gray-700 mb-2">اسم مدير المدرسة</label>
+                <input type="text" id="school_principal" value="${data.principal_name || ''}" placeholder="الاسم الكامل" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+            </div>
+
+            <hr class="my-6 border-gray-200">
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-2">هاتف المدرسة</label>
+                    <input type="text" id="school_phone" value="${data.phone || ''}" placeholder="017xxxxxxx" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-2">البريد الإلكتروني</label>
+                    <input type="email" id="school_email" value="${data.email || ''}" placeholder="school@edu.sa" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                </div>
+            </div>
+
+            <hr class="my-6 border-gray-200">
+
+            <div class="mb-6">
+                <label class="block text-sm font-bold text-gray-700 mb-3">شعار المدرسة</label>
+                <div class="flex items-center gap-6">
+                    <div class="w-24 h-24 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center overflow-hidden bg-gray-50">
+                        <img id="logo_preview" src="${data.logo_url || 'https://i.ibb.co/5WxLGJPD/2025-11-15-233559.png'}" alt="شعار" class="max-w-full max-h-full object-contain">
+                    </div>
+                    <div class="flex flex-col gap-2">
+                        <button onclick="document.getElementById('logo_upload').click()" class="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 text-sm">
+                            <span class="material-symbols-outlined text-lg">upload</span>
+                            رفع شعار جديد
                         </button>
+                        <input type="file" id="logo_upload" accept="image/*" onchange="previewLogo(this)" class="hidden">
+                        <button onclick="resetLogo()" class="flex items-center gap-2 px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg text-sm">
+                            <span class="material-symbols-outlined text-lg">restart_alt</span>
+                            استعادة الافتراضي
+                        </button>
+                    </div>
+                </div>
+                <input type="hidden" id="school_logo_url" value="${data.logo_url || ''}">
+            </div>
+
+            <div class="flex justify-between items-center pt-4 border-t border-gray-200">
+                <button onclick="resetAllSchoolSettings()" class="flex items-center gap-2 px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg">
+                    <span class="material-symbols-outlined">settings_backup_restore</span>
+                    استعادة الافتراضي
+                </button>
+                <button onclick="saveSchoolSettingsForm()" class="flex items-center gap-2 px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-bold">
+                    <span class="material-symbols-outlined">save</span>
+                    حفظ التغييرات
+                </button>
+            </div>
+        </div>
+    `;
+}
+
+function previewLogo(input) {
+    if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            document.getElementById('logo_preview').src = e.target.result;
+            document.getElementById('school_logo_url').value = e.target.result;
+        };
+        reader.readAsDataURL(input.files[0]);
+    }
+}
+
+function resetLogo() {
+    const defaultLogo = 'https://i.ibb.co/5WxLGJPD/2025-11-15-233559.png';
+    document.getElementById('logo_preview').src = defaultLogo;
+    document.getElementById('school_logo_url').value = defaultLogo;
+}
+
+function saveSchoolSettingsForm() {
+    const stages = [];
+    if (document.getElementById('stage_primary')?.checked) stages.push('ابتدائي');
+    if (document.getElementById('stage_intermediate')?.checked) stages.push('متوسط');
+    if (document.getElementById('stage_secondary')?.checked) stages.push('ثانوي');
+    
+    const settings = {
+        school_type: document.querySelector('input[name="school_type"]:checked')?.value || 'بنين',
+        stages: stages,
+        region: document.getElementById('school_region').value.trim(),
+        education_dept: document.getElementById('school_education_dept').value,
+        school_name: document.getElementById('school_name').value.trim(),
+        principal_name: document.getElementById('school_principal').value.trim(),
+        phone: document.getElementById('school_phone').value.trim(),
+        email: document.getElementById('school_email').value.trim(),
+        logo_url: document.getElementById('school_logo_url').value
+    };
+    
+    if (!settings.school_name) {
+        showToast('يرجى إدخال اسم المدرسة', 'error');
+        return;
+    }
+    if (stages.length === 0) {
+        showToast('يرجى اختيار مرحلة دراسية واحدة على الأقل', 'error');
+        return;
+    }
+    
+    showToast('جاري الحفظ...', 'info');
+    
+    google.script.run
+        .withSuccessHandler(function(result) {
+            if (result.success) {
+                showToast('تم حفظ إعدادات المدرسة بنجاح ✓', 'success');
+                settings_schoolData = settings;
+            } else {
+                showToast('خطأ في الحفظ: ' + result.error, 'error');
+            }
+        })
+        .saveSchoolSettings(settings);
+}
+
+function resetAllSchoolSettings() {
+    if (!confirm('هل أنت متأكد من استعادة الإعدادات الافتراضية؟')) return;
+    google.script.run
+        .withSuccessHandler(function(result) {
+            if (result.success) {
+                showToast('تم استعادة الإعدادات الافتراضية', 'success');
+                settings_schoolData = result.data;
+                renderSchoolTab();
+            }
+        })
+        .resetSchoolSettings();
+}
+
+// =================================================================
+// تبويب الهيئة الإدارية (المستخدمين)
+// =================================================================
+function loadUsersSettings() {
+    google.script.run
+        .withSuccessHandler(function(result) {
+            if (result.success) {
+                settings_users = result.users || [];
+                settings_permissions = result.permissions || [];
+                settings_roles = result.roles || [];
+                renderUsersTab();
+            } else {
+                showToast('خطأ في تحميل البيانات: ' + result.error, 'error');
+            }
+        })
+        .withFailureHandler(function(error) {
+            showToast('خطأ في الاتصال: ' + error, 'error');
+        })
+        .getUsers();
+}
+
+function renderUsersTab() {
+    const content = document.getElementById('settings-content');
+    
+    let usersRows = '';
+    if (settings_users.length === 0) {
+        usersRows = '<tr><td colspan="5" class="px-6 py-10 text-center text-gray-500">لا يوجد مستخدمين. أضف مستخدماً جديداً.</td></tr>';
+    } else {
+        settings_users.forEach(user => {
+            const permCount = user.permissions ? user.permissions.length : 0;
+            const scopeText = user.scope_type === 'all' ? 'الكل' : user.scope_value;
+            
+            usersRows += `
+                <tr class="hover:bg-gray-50">
+                    <td class="px-6 py-3">
+                        <div class="font-bold text-gray-900">${user.name}</div>
+                        <div class="text-xs text-gray-500">${user.mobile}</div>
+                    </td>
+                    <td class="px-6 py-3 text-sm text-gray-600">${user.role}</td>
+                    <td class="px-6 py-3">
+                        <span class="px-2 py-1 bg-indigo-100 text-indigo-700 text-xs rounded-full">${permCount} صلاحية</span>
+                    </td>
+                    <td class="px-6 py-3 text-sm text-gray-600">${scopeText}</td>
+                    <td class="px-6 py-3 text-center">
+                        <div class="flex items-center justify-center gap-2">
+                            <button onclick="editUser('${user.id}')" class="p-1 text-indigo-600 hover:bg-indigo-50 rounded">
+                                <span class="material-symbols-outlined text-lg">edit</span>
+                            </button>
+                            <button onclick="deleteUserConfirm('${user.id}')" class="p-1 text-red-500 hover:bg-red-50 rounded">
+                                <span class="material-symbols-outlined text-lg">delete</span>
+                            </button>
+                        </div>
                     </td>
                 </tr>
             `;
         });
-        tbody.innerHTML = html;
-    }
-
-    function filterSettingsTable() {
-        const query = document.getElementById('setting-search').value.toLowerCase();
-        const filtered = settings_allStudents.filter(s => 
-            s['اسم الطالب'].toLowerCase().includes(query) || 
-            String(s['رقم الطالب']).includes(query)
-        );
-        renderSettingsTable(filtered);
-    }
-
-    // ==========================================
-    // 2. معالجة ملف الإكسل (الاستيراد) - محدثة
-    // ==========================================
-    function processExcelFile(input) {
-        if (!input.files || !input.files[0]) return;
-        
-        const file = input.files[0];
-        
-        // --- تحسين تجربة المستخدم: تغيير حالة الزر ---
-        const btn = document.getElementById('btn-upload-excel');
-        const originalBtnText = btn.innerHTML;
-        
-        // تعطيل الزر وإظهار مؤشر التحميل
-        btn.disabled = true;
-        btn.classList.add('opacity-75', 'cursor-not-allowed');
-        btn.innerHTML = '<div class="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div> جاري المعالجة...';
-        
-        showEnhancedToast('info', 'جاري قراءة الملف وتحليله... قد يستغرق ذلك بضع ثوانٍ');
-        
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            const content = e.target.result.split(',')[1];
-            
-            google.script.run.withSuccessHandler(response => {
-                // إعادة الزر لحالته الطبيعية
-                input.value = ''; 
-                btn.disabled = false;
-                btn.classList.remove('opacity-75', 'cursor-not-allowed');
-                btn.innerHTML = originalBtnText;
-
-                if (response.success) {
-                    showEnhancedToast('success', response.message);
-                    // تحديث البيانات بالكامل
-                    google.script.run.withSuccessHandler(data => {
-                        APP_DATA = data;
-                        loadSettingsStudents();
-                    }).getInitialData();
-                } else {
-                    showEnhancedToast('danger', 'خطأ: ' + response.error);
-                }
-            }).withFailureHandler(err => {
-                // إعادة الزر لحالته الطبيعية عند الخطأ
-                input.value = '';
-                btn.disabled = false;
-                btn.classList.remove('opacity-75', 'cursor-not-allowed');
-                btn.innerHTML = originalBtnText;
-                showEnhancedToast('danger', 'فشل الاتصال بالخادم: ' + err);
-            }).processUploadedStudentFile(content, file.name);
-        };
-        reader.readAsDataURL(file);
-    }
-
-    // ==========================================
-    // 3. الإضافة والحذف اليدوي
-    // ==========================================
-    function openAddStudentModal() {
-        document.getElementById('add-student-modal').classList.remove('hidden');
     }
     
-    function closeAddStudentModal() {
-        document.getElementById('add-student-modal').classList.add('hidden');
-        document.getElementById('new-name').value = '';
-        document.getElementById('new-id').value = '';
-    }
+    content.innerHTML = `
+        <div class="space-y-6">
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200 flex flex-wrap gap-4 justify-between items-center">
+                <div>
+                    <h3 class="font-bold text-gray-800">الهيئة الإدارية</h3>
+                    <p class="text-sm text-gray-500">${settings_users.length} مستخدم مسجل</p>
+                </div>
+                <button onclick="openUserModal()" class="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-bold text-sm">
+                    <span class="material-symbols-outlined">person_add</span>
+                    إضافة مستخدم
+                </button>
+            </div>
 
-    function submitNewStudent() {
-        const name = document.getElementById('new-name').value;
-        const id = document.getElementById('new-id').value;
-        const grade = document.getElementById('new-grade').value;
-        const cls = document.getElementById('new-class').value;
-        const mobile = document.getElementById('new-mobile').value;
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">المستخدم</th>
+                                <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">الدور</th>
+                                <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">الصلاحيات</th>
+                                <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">النطاق</th>
+                                <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">إجراءات</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            ${usersRows}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
 
-        if(!name || !id || !grade) {
-            showEnhancedToast('danger', 'يرجى تعبئة الحقول الأساسية (الاسم، الهوية، الصف)');
-            return;
-        }
+            <div class="bg-gray-50 rounded-xl p-4 border border-gray-200">
+                <h4 class="font-bold text-gray-700 mb-3 flex items-center gap-2">
+                    <span class="material-symbols-outlined">info</span>
+                    دليل الصلاحيات
+                </h4>
+                <div class="grid grid-cols-2 md:grid-cols-5 gap-2 text-sm">
+                    ${settings_permissions.map(p => `
+                        <div class="flex items-center gap-2 text-gray-600">
+                            <span class="material-symbols-outlined text-base text-indigo-500">${p.icon}</span>
+                            ${p.name}
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+        </div>
 
-        let stage = 'متوسط'; 
-        if(grade.includes('ثانوي')) stage = 'ثانوي';
-        if(grade.includes('ابتدائي')) stage = 'ابتدائي';
+        <div id="user-modal" class="fixed inset-0 bg-gray-900/50 hidden z-50 flex items-center justify-center backdrop-blur-sm overflow-y-auto py-4">
+            <div class="bg-white rounded-xl shadow-2xl w-full max-w-2xl mx-4">
+                <div class="flex justify-between items-center p-4 border-b">
+                    <h3 class="text-lg font-bold text-gray-800" id="user-modal-title">إضافة مستخدم جديد</h3>
+                    <button onclick="closeUserModal()" class="text-gray-400 hover:text-gray-600">
+                        <span class="material-symbols-outlined">close</span>
+                    </button>
+                </div>
+                
+                <div class="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
+                    <input type="hidden" id="user-id">
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-1">الاسم <span class="text-red-500">*</span></label>
+                            <input type="text" id="user-name" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500" placeholder="الاسم الكامل">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-1">الدور <span class="text-red-500">*</span></label>
+                            <select id="user-role" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                                <option value="">اختر الدور</option>
+                                ${settings_roles.map(r => `<option value="${r}">${r}</option>`).join('')}
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-1">رقم الجوال <span class="text-red-500">*</span></label>
+                            <input type="text" id="user-mobile" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500" placeholder="05xxxxxxxx">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-1">البريد الإلكتروني</label>
+                            <input type="email" id="user-email" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500" placeholder="example@email.com">
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-2">الصلاحيات</label>
+                        <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                            <div class="flex justify-between items-center mb-3">
+                                <span class="text-sm text-gray-600">اختر الصلاحيات:</span>
+                                <label class="flex items-center gap-2 cursor-pointer text-sm">
+                                    <input type="checkbox" id="select-all-perms" onchange="toggleAllPermissions(this)" class="w-4 h-4 text-indigo-600 rounded">
+                                    <span>تحديد الكل</span>
+                                </label>
+                            </div>
+                            <div class="grid grid-cols-2 gap-2" id="permissions-list">
+                                ${settings_permissions.map(p => `
+                                    <label class="flex items-center gap-2 p-2 bg-white rounded border border-gray-200 cursor-pointer hover:border-indigo-300">
+                                        <input type="checkbox" name="user-perm" value="${p.id}" class="w-4 h-4 text-indigo-600 rounded">
+                                        <span class="material-symbols-outlined text-base text-gray-500">${p.icon}</span>
+                                        <span class="text-sm">${p.name}</span>
+                                    </label>
+                                `).join('')}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-2">نطاق الصلاحيات</label>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <select id="user-scope-type" onchange="updateScopeOptions()" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                                <option value="all">الكل (جميع الطلاب)</option>
+                                <option value="stage">مرحلة محددة</option>
+                                <option value="grade">صف محدد</option>
+                            </select>
+                            <div id="scope-value-container" class="hidden">
+                                <select id="user-scope-value" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                                    <option value="">اختر...</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="flex justify-end gap-3 p-4 border-t bg-gray-50">
+                    <button onclick="closeUserModal()" class="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg">إلغاء</button>
+                    <button onclick="saveUser()" class="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-bold">حفظ</button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    loadScopeOptions();
+}
 
-        const studentData = { name, id, grade, class: cls, mobile, stage };
-
-        showEnhancedToast('info', 'جاري حفظ الطالب...');
-        google.script.run.withSuccessHandler(res => {
-            if(res.success) {
-                showEnhancedToast('success', 'تمت إضافة الطالب بنجاح');
-                closeAddStudentModal();
-                google.script.run.withSuccessHandler(data => {
-                    APP_DATA = data;
-                    loadSettingsStudents();
-                }).getInitialData();
-            } else {
-                showEnhancedToast('danger', 'خطأ: ' + res.error);
+function loadScopeOptions() {
+    google.script.run
+        .withSuccessHandler(function(result) {
+            if (result.success) {
+                settings_scopeOptions = result;
             }
-        }).addStudentManually(studentData);
-    }
+        })
+        .getScopeOptions();
+}
 
-    function deleteStudent(id, name) {
-        if(confirm(`هل أنت متأكد من حذف الطالب: ${name}؟\nلا يمكن التراجع عن هذا الإجراء.`)) {
-            showEnhancedToast('info', 'جاري الحذف...');
-            google.script.run.withSuccessHandler(res => {
-                if(res.success) {
-                    showEnhancedToast('success', 'تم حذف الطالب');
-                    settings_allStudents = settings_allStudents.filter(s => s['رقم الطالب'] != id);
-                    APP_DATA.students = APP_DATA.students.filter(s => s['رقم الطالب'] != id);
-                    renderSettingsTable(settings_allStudents);
-                } else {
-                    showEnhancedToast('danger', 'خطأ: ' + res.error);
-                }
-            }).deleteStudent(id);
+function openUserModal(userId = null) {
+    settings_editingUser = userId;
+    
+    document.getElementById('user-id').value = '';
+    document.getElementById('user-name').value = '';
+    document.getElementById('user-role').value = '';
+    document.getElementById('user-mobile').value = '';
+    document.getElementById('user-email').value = '';
+    document.getElementById('user-scope-type').value = 'all';
+    document.getElementById('scope-value-container').classList.add('hidden');
+    document.querySelectorAll('input[name="user-perm"]').forEach(cb => cb.checked = false);
+    document.getElementById('select-all-perms').checked = false;
+    
+    if (userId) {
+        document.getElementById('user-modal-title').textContent = 'تعديل بيانات المستخدم';
+        const user = settings_users.find(u => u.id === userId);
+        if (user) {
+            document.getElementById('user-id').value = user.id;
+            document.getElementById('user-name').value = user.name;
+            document.getElementById('user-role').value = user.role;
+            document.getElementById('user-mobile').value = user.mobile;
+            document.getElementById('user-email').value = user.email || '';
+            document.getElementById('user-scope-type').value = user.scope_type || 'all';
+            
+            if (user.permissions) {
+                user.permissions.forEach(perm => {
+                    const cb = document.querySelector(`input[name="user-perm"][value="${perm}"]`);
+                    if (cb) cb.checked = true;
+                });
+            }
+            
+            updateScopeOptions();
+            if (user.scope_value) {
+                setTimeout(() => {
+                    document.getElementById('user-scope-value').value = user.scope_value;
+                }, 100);
+            }
         }
+    } else {
+        document.getElementById('user-modal-title').textContent = 'إضافة مستخدم جديد';
     }
+    
+    document.getElementById('user-modal').classList.remove('hidden');
+}
+
+function closeUserModal() {
+    document.getElementById('user-modal').classList.add('hidden');
+    settings_editingUser = null;
+}
+
+function editUser(userId) {
+    openUserModal(userId);
+}
+
+function toggleAllPermissions(checkbox) {
+    document.querySelectorAll('input[name="user-perm"]').forEach(cb => {
+        cb.checked = checkbox.checked;
+    });
+}
+
+function updateScopeOptions() {
+    const scopeType = document.getElementById('user-scope-type').value;
+    const container = document.getElementById('scope-value-container');
+    const select = document.getElementById('user-scope-value');
+    
+    if (scopeType === 'all') {
+        container.classList.add('hidden');
+        return;
+    }
+    
+    container.classList.remove('hidden');
+    select.innerHTML = '<option value="">اختر...</option>';
+    
+    let options = [];
+    if (scopeType === 'stage') {
+        options = settings_scopeOptions.stages || ['متوسط', 'ثانوي'];
+    } else if (scopeType === 'grade') {
+        options = settings_scopeOptions.grades || [];
+    }
+    
+    options.forEach(opt => {
+        select.innerHTML += `<option value="${opt}">${opt}</option>`;
+    });
+}
+
+function saveUser() {
+    const name = document.getElementById('user-name').value.trim();
+    const role = document.getElementById('user-role').value;
+    const mobile = document.getElementById('user-mobile').value.trim();
+    const email = document.getElementById('user-email').value.trim();
+    const scopeType = document.getElementById('user-scope-type').value;
+    const scopeValue = document.getElementById('user-scope-value').value;
+    
+    const permissions = [];
+    document.querySelectorAll('input[name="user-perm"]:checked').forEach(cb => {
+        permissions.push(cb.value);
+    });
+    
+    if (!name) { showToast('يرجى إدخال اسم المستخدم', 'error'); return; }
+    if (!role) { showToast('يرجى اختيار الدور', 'error'); return; }
+    if (!mobile) { showToast('يرجى إدخال رقم الجوال', 'error'); return; }
+    if (scopeType !== 'all' && !scopeValue) { showToast('يرجى تحديد النطاق', 'error'); return; }
+    
+    const userData = {
+        id: document.getElementById('user-id').value,
+        name, role, mobile, email, permissions,
+        scope_type: scopeType,
+        scope_value: scopeType === 'all' ? '' : scopeValue,
+        status: 'active'
+    };
+    
+    showToast('جاري الحفظ...', 'info');
+    
+    const saveFunction = userData.id ? 'updateUser' : 'addUser';
+    
+    google.script.run
+        .withSuccessHandler(function(result) {
+            if (result.success) {
+                showToast(result.message || 'تم الحفظ بنجاح ✓', 'success');
+                closeUserModal();
+                loadUsersSettings();
+            } else {
+                showToast('خطأ: ' + result.error, 'error');
+            }
+        })
+        [saveFunction](userData);
+}
+
+function deleteUserConfirm(userId) {
+    const user = settings_users.find(u => u.id === userId);
+    if (!user) return;
+    if (!confirm(`هل أنت متأكد من حذف "${user.name}"؟`)) return;
+    
+    google.script.run
+        .withSuccessHandler(function(result) {
+            if (result.success) {
+                showToast('تم حذف المستخدم', 'success');
+                loadUsersSettings();
+            } else {
+                showToast('خطأ: ' + result.error, 'error');
+            }
+        })
+        .deleteUser(userId);
+}
+
+// =================================================================
+// تبويب لجنة التوجيه
+// =================================================================
+function renderCommitteeTab() {
+    const content = document.getElementById('settings-content');
+    content.innerHTML = `
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div class="text-center py-10">
+                <span class="material-symbols-outlined text-6xl text-gray-300 mb-4">groups</span>
+                <h3 class="text-xl font-bold text-gray-600 mb-2">قيد التطوير</h3>
+                <p class="text-gray-500">سيتم إضافة واجهة لجنة التوجيه قريباً</p>
+            </div>
+        </div>
+    `;
+}
+
+// =================================================================
+// تبويب المعلمين
+// =================================================================
+function renderTeachersTab() {
+    const content = document.getElementById('settings-content');
+    content.innerHTML = `
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div class="text-center py-10">
+                <span class="material-symbols-outlined text-6xl text-gray-300 mb-4">school</span>
+                <h3 class="text-xl font-bold text-gray-600 mb-2">قيد التطوير</h3>
+                <p class="text-gray-500">سيتم إضافة واجهة المعلمين قريباً</p>
+            </div>
+        </div>
+    `;
+}
+
+// =================================================================
+// تبويب الطلاب
+// =================================================================
+function loadStudentsSettings() {
+    const content = document.getElementById('settings-content');
+    content.innerHTML = `
+        <div class="space-y-6">
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200 flex flex-wrap gap-4 justify-between items-center">
+                <div class="flex gap-2 items-center">
+                    <div class="relative">
+                        <span class="material-symbols-outlined absolute right-3 top-2.5 text-gray-400">search</span>
+                        <input type="text" id="setting-search" onkeyup="filterSettingsTable()" placeholder="بحث..." class="pr-10 pl-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 w-64">
+                    </div>
+                    <span class="text-xs text-gray-500 font-bold" id="setting-count">0 طالب</span>
+                </div>
+                <div class="flex gap-2">
+                    <button onclick="openAddStudentModal()" class="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-bold text-sm">
+                        <span class="material-symbols-outlined">person_add</span> إضافة طالب
+                    </button>
+                    <button id="btn-upload-excel" onclick="document.getElementById('excel-upload').click()" class="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 font-bold text-sm">
+                        <span class="material-symbols-outlined">upload_file</span> استيراد Excel
+                    </button>
+                    <input type="file" id="excel-upload" accept=".xls,.xlsx" class="hidden" onchange="processExcelFile(this)">
+                </div>
+            </div>
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                <div class="overflow-x-auto max-h-[500px]">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50 sticky top-0">
+                            <tr>
+                                <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">اسم الطالب</th>
+                                <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">الهوية</th>
+                                <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">الصف/الفصل</th>
+                                <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">الجوال</th>
+                                <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">حذف</th>
+                            </tr>
+                        </thead>
+                        <tbody id="settings-students-table" class="bg-white divide-y divide-gray-200"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <div id="add-student-modal" class="fixed inset-0 bg-gray-900/50 hidden z-50 flex items-center justify-center backdrop-blur-sm">
+            <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg p-6">
+                <div class="flex justify-between items-center mb-4 border-b pb-2">
+                    <h3 class="text-lg font-bold text-gray-800">إضافة طالب جديد</h3>
+                    <button onclick="closeAddStudentModal()" class="text-gray-400 hover:text-gray-600"><span class="material-symbols-outlined">close</span></button>
+                </div>
+                <div class="space-y-4">
+                    <div><label class="block text-sm font-bold text-gray-700 mb-1">اسم الطالب</label><input type="text" id="new-name" class="w-full px-4 py-2 border border-gray-300 rounded-lg"></div>
+                    <div><label class="block text-sm font-bold text-gray-700 mb-1">رقم الهوية</label><input type="text" id="new-id" class="w-full px-4 py-2 border border-gray-300 rounded-lg"></div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div><label class="block text-sm font-bold text-gray-700 mb-1">الصف</label><select id="new-grade" class="w-full px-4 py-2 border border-gray-300 rounded-lg"><option value="">اختر</option><option>أول متوسط</option><option>ثاني متوسط</option><option>ثالث متوسط</option><option>أول ثانوي</option><option>ثاني ثانوي</option><option>ثالث ثانوي</option></select></div>
+                        <div><label class="block text-sm font-bold text-gray-700 mb-1">الفصل</label><select id="new-class" class="w-full px-4 py-2 border border-gray-300 rounded-lg"><option value="">اختر</option><option>أ</option><option>ب</option><option>ج</option><option>د</option><option>هـ</option></select></div>
+                    </div>
+                    <div><label class="block text-sm font-bold text-gray-700 mb-1">جوال ولي الأمر</label><input type="text" id="new-mobile" placeholder="05xxxxxxxx" class="w-full px-4 py-2 border border-gray-300 rounded-lg"></div>
+                </div>
+                <div class="flex justify-end gap-3 mt-6 pt-4 border-t">
+                    <button onclick="closeAddStudentModal()" class="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg">إلغاء</button>
+                    <button onclick="saveNewStudent()" class="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-bold">حفظ</button>
+                </div>
+            </div>
+        </div>
+    `;
+    populateStudentsTable();
+}
+
+function populateStudentsTable() {
+    settings_allStudents = APP_DATA.students || [];
+    const tbody = document.getElementById('settings-students-table');
+    if (settings_allStudents.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" class="px-6 py-10 text-center text-gray-500">لا يوجد طلاب</td></tr>';
+        document.getElementById('setting-count').textContent = '0 طالب';
+        return;
+    }
+    let html = '';
+    settings_allStudents.forEach(s => {
+        html += `<tr class="hover:bg-gray-50"><td class="px-6 py-3 text-sm font-bold text-gray-900">${s['اسم الطالب']}</td><td class="px-6 py-3 text-sm text-gray-500 font-mono">${s['رقم الطالب']}</td><td class="px-6 py-3 text-sm text-gray-500">${s['الصف']}/${s['الفصل']}</td><td class="px-6 py-3 text-sm text-gray-500 font-mono" dir="ltr">${s['رقم الجوال']||'-'}</td><td class="px-6 py-3 text-center"><button onclick="deleteStudentSetting('${s['رقم الطالب']}')" class="text-red-500 hover:text-red-700"><span class="material-symbols-outlined text-lg">delete</span></button></td></tr>`;
+    });
+    tbody.innerHTML = html;
+    document.getElementById('setting-count').textContent = settings_allStudents.length + ' طالب';
+}
+
+function filterSettingsTable() {
+    const t = document.getElementById('setting-search').value.toLowerCase();
+    const f = settings_allStudents.filter(s => s['اسم الطالب'].toLowerCase().includes(t) || String(s['رقم الطالب']).includes(t));
+    const tbody = document.getElementById('settings-students-table');
+    if (f.length === 0) { tbody.innerHTML = '<tr><td colspan="5" class="px-6 py-10 text-center text-gray-500">لا توجد نتائج</td></tr>'; return; }
+    let html = '';
+    f.forEach(s => { html += `<tr class="hover:bg-gray-50"><td class="px-6 py-3 text-sm font-bold text-gray-900">${s['اسم الطالب']}</td><td class="px-6 py-3 text-sm text-gray-500 font-mono">${s['رقم الطالب']}</td><td class="px-6 py-3 text-sm text-gray-500">${s['الصف']}/${s['الفصل']}</td><td class="px-6 py-3 text-sm text-gray-500 font-mono" dir="ltr">${s['رقم الجوال']||'-'}</td><td class="px-6 py-3 text-center"><button onclick="deleteStudentSetting('${s['رقم الطالب']}')" class="text-red-500 hover:text-red-700"><span class="material-symbols-outlined text-lg">delete</span></button></td></tr>`; });
+    tbody.innerHTML = html;
+}
+
+function openAddStudentModal() { document.getElementById('add-student-modal').classList.remove('hidden'); }
+function closeAddStudentModal() { document.getElementById('add-student-modal').classList.add('hidden'); ['new-name','new-id','new-grade','new-class','new-mobile'].forEach(id => document.getElementById(id).value = ''); }
+
+function saveNewStudent() {
+    const name = document.getElementById('new-name').value.trim();
+    const id = document.getElementById('new-id').value.trim();
+    const grade = document.getElementById('new-grade').value;
+    const cls = document.getElementById('new-class').value;
+    const mobile = document.getElementById('new-mobile').value.trim();
+    if (!name || !id || !grade || !cls) { showToast('يرجى ملء جميع الحقول', 'error'); return; }
+    let stage = grade.includes('ثانوي') ? 'ثانوي' : 'متوسط';
+    showToast('جاري الحفظ...', 'info');
+    google.script.run.withSuccessHandler(function(r) {
+        if (r.success) { showToast('تم إضافة الطالب ✓', 'success'); closeAddStudentModal(); google.script.run.withSuccessHandler(function(d) { if (d.success) { APP_DATA.students = d.students; populateStudentsTable(); } }).getInitialData(); }
+        else { showToast('خطأ: ' + r.error, 'error'); }
+    }).addStudentManually({ id, name, grade, class: cls, mobile, stage });
+}
+
+function deleteStudentSetting(id) {
+    if (!confirm('هل أنت متأكد من حذف هذا الطالب؟')) return;
+    google.script.run.withSuccessHandler(function(r) {
+        if (r.success) { showToast('تم حذف الطالب', 'success'); google.script.run.withSuccessHandler(function(d) { if (d.success) { APP_DATA.students = d.students; populateStudentsTable(); } }).getInitialData(); }
+        else { showToast('خطأ: ' + r.error, 'error'); }
+    }).deleteStudent(id);
+}
+
+function processExcelFile(input) {
+    const file = input.files[0]; if (!file) return;
+    const btn = document.getElementById('btn-upload-excel');
+    btn.innerHTML = '<span class="material-symbols-outlined animate-spin">sync</span> جاري...';
+    btn.disabled = true;
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        google.script.run.withSuccessHandler(function(r) {
+            btn.innerHTML = '<span class="material-symbols-outlined">upload_file</span> استيراد Excel';
+            btn.disabled = false; input.value = '';
+            if (r.success) { showToast(r.message, 'success'); google.script.run.withSuccessHandler(function(d) { if (d.success) { APP_DATA.students = d.students; populateStudentsTable(); } }).getInitialData(); }
+            else { showToast('خطأ: ' + r.error, 'error'); }
+        }).processUploadedStudentFile(e.target.result.split(',')[1], file.name);
+    };
+    reader.readAsDataURL(file);
+}
 </script>

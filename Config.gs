@@ -14,3 +14,10 @@ const ABSENCE_SHEET_SEC_NAME = "سجل_الغياب_ثانوي";
 
 const SETTINGS_SHEET_NAME = "الإعدادات";
 const ACADEMIC_SHEET_NAME = "التحصيل الدراسي";
+// =================================================================
+// أسماء الشيتات الجديدة (الإعدادات المنفصلة)
+// =================================================================
+const SCHOOL_SETTINGS_SHEET = "إعدادات_المدرسة";
+const USERS_SHEET = "المستخدمين";
+const COMMITTEES_SHEET = "اللجان";
+const TEACHERS_SHEET = "المعلمين";

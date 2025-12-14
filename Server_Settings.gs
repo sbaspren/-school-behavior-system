@@ -1,5 +1,5 @@
 // =================================================================
-// إعدادات النظام - معالجة ملفات الطلاب والإدارة (نسخة مُحدثة: إنشاء تلقائي للورقة)
+// إعدادات النظام - معالجة ملفات الطلاب وإعدادات المدرسة
 // =================================================================
 
 // 1. معالجة ملف الإكسل المرفوع (نظام نور)
@@ -47,15 +47,14 @@ function processUploadedStudentFile(base64Data, filename) {
       studentsToAdd.push([studentId, name, grade, className, mobile, detectedStage]);
     }
 
-    // --- الحفظ في قاعدة البيانات الرئيسية (مع الإنشاء التلقائي) ---
+    // --- الحفظ في قاعدة البيانات الرئيسية ---
     const mainSS = SpreadsheetApp.openByUrl(SPREADSHEET_URL);
     let mainSheet = mainSS.getSheetByName(STUDENTS_SHEET_NAME);
 
-    // 🔥 التعديل هنا: إذا لم يجد الورقة، يقوم بإنشائها وإضافة العناوين
     if (!mainSheet) {
       mainSheet = mainSS.insertSheet(STUDENTS_SHEET_NAME);
       mainSheet.appendRow(['رقم الطالب', 'اسم الطالب', 'الصف', 'الفصل', 'رقم الجوال', 'المرحلة']);
-      mainSheet.setRightToLeft(true); // جعل الاتجاه من اليمين لليسار
+      mainSheet.setRightToLeft(true);
     }
     
     const existingData = mainSheet.getDataRange().getValues();
@@ -84,13 +83,12 @@ function processUploadedStudentFile(base64Data, filename) {
   }
 }
 
-// ... بقية دوال الإضافة والحذف اليدوي كما هي ...
+// إضافة طالب يدوياً
 function addStudentManually(data) {
   try {
     const ss = SpreadsheetApp.openByUrl(SPREADSHEET_URL);
     let sheet = ss.getSheetByName(STUDENTS_SHEET_NAME);
     
-    // 🔥 إضافة الإنشاء التلقائي هنا أيضاً للأمان
     if (!sheet) {
       sheet = ss.insertSheet(STUDENTS_SHEET_NAME);
       sheet.appendRow(['رقم الطالب', 'اسم الطالب', 'الصف', 'الفصل', 'رقم الجوال', 'المرحلة']);
@@ -110,11 +108,12 @@ function addStudentManually(data) {
   }
 }
 
+// حذف طالب
 function deleteStudent(id) {
   try {
     const ss = SpreadsheetApp.openByUrl(SPREADSHEET_URL);
     const sheet = ss.getSheetByName(STUDENTS_SHEET_NAME);
-    if (!sheet) throw new Error("ورقة الطلاب غير موجودة"); // هنا يجب أن تكون موجودة للحذف
+    if (!sheet) throw new Error("ورقة الطلاب غير موجودة");
     
     const data = sheet.getDataRange().getValues();
     for (let i = 0; i < data.length; i++) {
@@ -128,8 +127,156 @@ function deleteStudent(id) {
     return { success: false, error: e.message };
   }
 }
+
+// تفعيل الصلاحيات
 function forcePermissionTrigger() {
-  // هذا السطر لا يفعل شيئاً سوى إجبار جوجل على طلب الإذن
   Drive.Files.list(); 
   console.log("تم تفعيل الصلاحيات بنجاح!");
+}
+
+
+// =================================================================
+// 🆕 إعدادات المدرسة - School Settings
+// يستخدم SCHOOL_SETTINGS_SHEET من Config.gs
+// =================================================================
+
+/**
+ * جلب بيانات المدرسة
+ */
+function getSchoolSettings() {
+  try {
+    const ss = SpreadsheetApp.openByUrl(SPREADSHEET_URL);
+    let sheet = ss.getSheetByName(SCHOOL_SETTINGS_SHEET);
+    
+    // إذا لم يوجد الشيت، أنشئه مع القيم الافتراضية
+    if (!sheet) {
+      return createDefaultSchoolSettings_();
+    }
+    
+    const data = sheet.getDataRange().getValues();
+    if (data.length < 2) {
+      return createDefaultSchoolSettings_();
+    }
+    
+    // تحويل البيانات لكائن
+    const settings = {};
+    for (let i = 1; i < data.length; i++) {
+      const key = data[i][0];
+      const value = data[i][1];
+      if (key) {
+        if (key === 'stages' && value) {
+          settings[key] = value.split(',').map(s => s.trim());
+        } else {
+          settings[key] = value || '';
+        }
+      }
+    }
+    
+    return { success: true, data: settings };
+    
+  } catch (e) {
+    console.error("❌ خطأ في جلب إعدادات المدرسة:", e);
+    return { success: false, error: e.toString() };
+  }
+}
+
+/**
+ * حفظ بيانات المدرسة
+ */
+function saveSchoolSettings(settings) {
+  try {
+    const ss = SpreadsheetApp.openByUrl(SPREADSHEET_URL);
+    let sheet = ss.getSheetByName(SCHOOL_SETTINGS_SHEET);
+    
+    // إنشاء الشيت إذا لم يكن موجوداً
+    if (!sheet) {
+      sheet = ss.insertSheet(SCHOOL_SETTINGS_SHEET);
+      sheet.setRightToLeft(true);
+      sheet.appendRow(['المفتاح', 'القيمة', 'الوصف', 'تاريخ التحديث']);
+      sheet.getRange(1, 1, 1, 4).setBackground('#f3f4f6').setFontWeight('bold');
+    }
+    
+    // تجهيز البيانات للحفظ
+    const now = new Date();
+    const dataToSave = [
+      ['school_type', settings.school_type || '', 'نوع المدرسة', now],
+      ['stages', Array.isArray(settings.stages) ? settings.stages.join(',') : settings.stages || '', 'المراحل الدراسية', now],
+      ['region', settings.region || '', 'المنطقة التعليمية', now],
+      ['education_dept', settings.education_dept || '', 'إدارة الشؤون التعليمية', now],
+      ['school_name', settings.school_name || '', 'اسم المدرسة', now],
+      ['principal_name', settings.principal_name || '', 'اسم مدير/ة المدرسة', now],
+      ['logo_url', settings.logo_url || '', 'رابط شعار المدرسة', now],
+      ['phone', settings.phone || '', 'هاتف المدرسة', now],
+      ['email', settings.email || '', 'البريد الإلكتروني', now],
+      ['address', settings.address || '', 'العنوان', now]
+    ];
+    
+    // مسح البيانات القديمة (ما عدا العنوان)
+    if (sheet.getLastRow() > 1) {
+      sheet.getRange(2, 1, sheet.getLastRow() - 1, 4).clear();
+    }
+    
+    // كتابة البيانات الجديدة
+    if (dataToSave.length > 0) {
+      sheet.getRange(2, 1, dataToSave.length, 4).setValues(dataToSave);
+    }
+    
+    return { success: true, message: 'تم حفظ إعدادات المدرسة بنجاح' };
+    
+  } catch (e) {
+    console.error("❌ خطأ في حفظ إعدادات المدرسة:", e);
+    return { success: false, error: e.toString() };
+  }
+}
+
+/**
+ * إنشاء إعدادات افتراضية
+ */
+function createDefaultSchoolSettings_() {
+  const defaultSettings = {
+    school_type: 'بنين',
+    stages: [],
+    region: '',
+    education_dept: 'بنين',
+    school_name: '',
+    principal_name: '',
+    logo_url: 'https://i.ibb.co/5WxLGJPD/2025-11-15-233559.png',
+    phone: '',
+    email: '',
+    address: ''
+  };
+  
+  saveSchoolSettings(defaultSettings);
+  
+  return { success: true, data: defaultSettings };
+}
+
+/**
+ * استرجاع الإعدادات الافتراضية
+ */
+function resetSchoolSettings() {
+  try {
+    const ss = SpreadsheetApp.openByUrl(SPREADSHEET_URL);
+    const sheet = ss.getSheetByName(SCHOOL_SETTINGS_SHEET);
+    
+    if (sheet) {
+      ss.deleteSheet(sheet);
+    }
+    
+    return createDefaultSchoolSettings_();
+    
+  } catch (e) {
+    return { success: false, error: e.toString() };
+  }
+}
+
+/**
+ * رفع شعار المدرسة
+ */
+function uploadSchoolLogo(base64Data, filename) {
+  try {
+    return { success: true, url: base64Data };
+  } catch (e) {
+    return { success: false, error: e.toString() };
+  }
 }

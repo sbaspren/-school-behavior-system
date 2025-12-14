@@ -513,19 +513,16 @@ function openIltizamWithStudent() {
 function printIltizamBlank() {
     closeIltizamModal();
     
-    const days = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
-    const dayName = days[new Date().getDay()];
-    
+    // التعديل هنا: إرسال التاريخ كسلسلة نصية فارغة "" بدلاً من التاريخ الحالي
     let printData = {
         studentName: '',
         grade: '',
-        violationDay: dayName,
-        violationDate: new Date().toLocaleDateString('ar-SA-u-ca-islamic')
+        violationDay: '',
+        violationDate: '' // تم جعلها فارغة لتظهر الخانة بيضاء عند الطباعة
     };
     
-    if (APP_DATA.settings && APP_DATA.settings.deputies && APP_DATA.settings.deputies.length > 0) {
-        printData.deputyName = APP_DATA.settings.deputies[0].name;
-    }
+    // لا حاجة لاسم الوكيل في النسخة الفارغة (اختياري، ويمكن تركه فارغاً أيضاً)
+    printData.deputyName = ''; 
     
     printFormDirectly('iltizam_madrasi', encodeURIComponent(JSON.stringify(printData)));
 }
